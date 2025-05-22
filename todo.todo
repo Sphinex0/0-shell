@@ -5,9 +5,10 @@ pwd
 ls (supporting -l, -a, -F)
 exit
 
+
 team : mohamed, adnane
-cat
-cp
-rm (supporting -r)
-mv
-mkdir
+cat //v1
+cp //v1
+rm (supporting -r) //v1
+mv //v1
+mkdir //v1
