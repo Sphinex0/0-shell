@@ -1,1 +1,3 @@
-pub fn echo(tab: &[&str]) {}
+pub fn echo(tab: &[&str]) {
+
+}
