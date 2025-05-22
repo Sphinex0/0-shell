@@ -1,10 +1,18 @@
+mod cat;
 mod cd;
+mod cp;
 mod echo;
 mod ls;
+mod mkdir;
+mod mv;
 mod pwd;
-use cd::*;
-use echo::*;
-use ls::*;
-use pwd::*;
-
-
+mod rm;
+pub use cat::*;
+pub use cd::*;
+pub use cp::*;
+pub use echo::*;
+pub use ls::*;
+pub use mkdir::*;
+pub use mv::*;
+pub use pwd::*;
+pub use rm::*;
