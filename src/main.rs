@@ -16,35 +16,42 @@ fn main() {
             buf
         };
         let input = input.split_whitespace().collect::<Vec<_>>();
+        if input.is_empty() {
+            continue
+        }
         let command = input[0];
-        let args = &input[1..];
+        let args: Vec<&str> = if input.len() > 1 {
+        input[1..].to_vec() 
+        }else {
+        Vec::new() 
+        };
         match command {
             "echo" => {
-                echo(args);
+                echo(&args);
             }
             "pwd" => {
                 pwd(&mut current_dir);
             }
             "cd" => {
-                cd(args);
+                cd(&args);
             }
             "ls" => {
-                ls(args);
+                ls(&args);
             }
             "cat" => {
-                cat(args);
+                cat(&args);
             }
             "cp" => {
-                cp(args);
+                cp(&args);
             }
             "rm" => {
-                rm(args);
+                rm(&args);
             }
             "mv" => {
-                mv(args);
+                mv(&args);
             }
             "mkdir" => {
-                mkdir(args);
+                mkdir(&args);
             }
             "exit" => exit(0),
             _ => {
