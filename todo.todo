@@ -16,3 +16,5 @@ mkdir
 
 handle spaces in names (using "")
 handle path deleting
+handle ctrl+c not crashing
+hadnle cat witout arguments
