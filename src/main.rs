@@ -1,5 +1,6 @@
 use std::io::Write;
 use std::io::stdin;
+use std::process::exit;
 
 use shell::*;
 
@@ -15,17 +16,33 @@ fn main() {
         let input = input.split_whitespace().collect::<Vec<_>>();
         let command = input[0];
         let args = &input[1..];
-        let commands = [
-            "echo", "cd", "ls", "pwd", "cat", "cp", "rm", "mv", "mkdir", "exit",
-        ];
-        match commands.contains(&command) {
-            true => match command {
-                "echo" => {
-                    echo(args);
-                }
-                _ => {}
-            },
-            false => println!("err")
+        match command {
+            "echo" => {
+                echo(args);
+            }
+            "cd" => {
+                cd(args);
+            }
+            "ls" => {
+                ls(args);
+            }
+            "cat" => {
+                cat(args);
+            }
+            "cp" => {
+                cp(args);
+            }
+            "rm" => {
+                rm(args);
+            }
+            "mv" => {
+                mv(args);
+            }
+            "mkdir" => {
+                mkdir(args);
+            }
+            "exit" => exit(0),
+            _ => {}
         }
     }
 }
