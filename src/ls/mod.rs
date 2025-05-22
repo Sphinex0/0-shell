@@ -3,10 +3,10 @@ use std::process;
 use std::{fs, io};
 
 pub fn ls(tab: &[&str], current_dir: &PathBuf) {
-    let target_dir_str = if tab.len() > 1 { &tab[0] } else { "." };
+    let target_dir_str = current_dir;
 
     //create a path object
-    let target_path = Path::new(current_dir);
+   // let target_path = Path::new(target_dir_str);
 
     // read directory content
     let entries_result = fs::read_dir(target_dir_str);
@@ -28,12 +28,12 @@ pub fn ls(tab: &[&str], current_dir: &PathBuf) {
         }
         Err(e) => match e.kind() {
             io::ErrorKind::NotFound => {
-                eprintln!("Warning: Directory not found: {}", target_dir_str);
+                eprintln!("Warning: Directory not found: {}", target_dir_str.display());
             }
             io::ErrorKind::PermissionDenied => {
                 eprintln!(
                     "Warning: permission denied to read directory: {}",
-                    target_dir_str
+                    target_dir_str.display()
                 );
             }
             _ => {
