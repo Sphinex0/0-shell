@@ -1,6 +1,8 @@
 use std::io::Write;
 use std::io::stdin;
 
+use shell::*;
+
 fn main() {
     loop {
         print!("$ ");
@@ -19,7 +21,7 @@ fn main() {
         match commands.contains(&command) {
             true => match command {
                 "echo" => {
-                    println!("edddd");
+                    echo(args);
                 }
                 _ => {}
             },
