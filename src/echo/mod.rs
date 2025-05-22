@@ -1,3 +1,3 @@
-pub fn echo(tab: &[&str]) {
-    println!()
+pub fn echo(args: &[&str]) {
+    println!("{}", args.join(" "))
 }
