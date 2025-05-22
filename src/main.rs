@@ -36,7 +36,7 @@ fn main() {
                 cd(&args, &mut current_dir);
             }
             "ls" => {
-                ls(&args);
+                ls(&args, &current_dir);
             }
             "cat" => {
                 cat(&args);
