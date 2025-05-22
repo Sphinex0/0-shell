@@ -6,22 +6,22 @@ pub fn cd(tab: &[&str], current_dir: &mut PathBuf) {
         current_dir.push("/");
         return;
     }
-    match tab[0] {
-        "../" | ".." => {
-            current_dir.pop();
-        }
-        "." => {}
-        mut path => {
-            path = match path.strip_prefix("./") {
-                Some(p) => p,
-                None => path,
-            };
-            let mut copy_current_dir = current_dir.clone();
-            copy_current_dir.push(path);
-            match copy_current_dir.read_dir() {
-                Ok(_) => current_dir.push(path),
-                Err(err) => println!("No such directory err {:?}",err),
+    let path = tab[0];
+    let table = path.split("/").collect::<Vec<_>>();
+    let mut copy_current_dir = current_dir.clone();
+    for p in table {
+        match p {
+            "." => {}
+            ".." => {
+                copy_current_dir.pop();
+            }
+            _ => {
+                copy_current_dir.push(p);
             }
         }
-    };
+    }
+    match copy_current_dir.read_dir() {
+        Ok(_) => *current_dir = copy_current_dir,
+        Err(err) => println!("cd: no such file or directory: {path}"),
+    }
 }
