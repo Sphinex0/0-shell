@@ -1,0 +1,14 @@
+team : hamza, mustapha
+echo
+cd
+pwd
+ls (supporting -l, -a, -F)
+exit
+
+
+team : mohamed, adnane
+cat
+cp
+rm (supporting -r)
+mv
+mkdir
