@@ -1,27 +1,49 @@
-use std::path::PathBuf;
+use std::{env::home_dir, path::PathBuf};
 
-pub fn cd(tab: &[&str], current_dir: &mut PathBuf) {
+pub fn cd(tab: &[&str], current_dir: &mut PathBuf, history: &mut PathBuf) {
     if tab.len() == 0 {
-        current_dir.clear();
-        current_dir.push("/");
-        return;
-    }
-    let path = tab[0];
-    let table = path.split("/").collect::<Vec<_>>();
-    let mut copy_current_dir = current_dir.clone();
-    for p in table {
-        match p {
-            "." => {}
-            ".." => {
-                copy_current_dir.pop();
+        *history = current_dir.clone();
+        *current_dir = PathBuf::from("/");
+    } else {
+        let path = tab[0];
+        if path != "-" {
+            *history = current_dir.clone();
+        }
+        match path {
+            "/" => *current_dir = PathBuf::from("/"),
+            "~" => {
+                match home_dir() {
+                    Some(p) => *current_dir = p,
+                    None => {}
+                }
+                return;
+            }
+            "-" => {
+                *current_dir = history.clone();
             }
             _ => {
-                copy_current_dir.push(p);
+                if &path[0..1] == "/" {
+                    println!("cd: no such file or directory: {path}");
+                } else {
+                    let table = path.split("/").collect::<Vec<_>>();
+                    let mut copy_current_dir = current_dir.clone();
+                    for p in table {
+                        match p {
+                            "." => {}
+                            ".." => {
+                                copy_current_dir.pop();
+                            }
+                            _ => {
+                                copy_current_dir.push(p);
+                            }
+                        }
+                    }
+                    match copy_current_dir.read_dir() {
+                        Ok(_) => *current_dir = copy_current_dir,
+                        Err(_) => println!("cd: no such file or directory: {path}"),
+                    }
+                }
             }
         }
-    }
-    match copy_current_dir.read_dir() {
-        Ok(_) => *current_dir = copy_current_dir,
-        Err(err) => println!("cd: no such file or directory: {path}"),
     }
 }
