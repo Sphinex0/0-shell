@@ -5,7 +5,6 @@ pwd
 ls (supporting -l, -a, -F)
 exit
 
-
 team : mohamed, adnane
 cat
 cp
