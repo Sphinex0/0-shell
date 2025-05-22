@@ -1,20 +1,21 @@
+use std::env::*;
 use std::io::Write;
 use std::io::stdin;
 use std::process::exit;
-use std::env::*;
 
 use shell::*;
 
 fn main() {
-    let mut current_dir =  current_dir().unwrap();
+    let mut current_dir = current_dir().unwrap();
     loop {
-        print!("\x1b[32m{} \x1b[33m$ \x1b[0m",current_dir.display());
+        print!("\x1b[32m{} \x1b[33m$ \x1b[0m", current_dir.display());
         std::io::stdout().flush().unwrap();
         let input = {
             let mut buf = String::new();
             stdin().read_line(&mut buf).unwrap();
             buf
         };
+        
         let input = input.split_whitespace().collect::<Vec<_>>();
         let command = input[0];
         let args = &input[1..];
@@ -32,19 +33,19 @@ fn main() {
                 ls(args);
             }
             "cat" => {
-                cat(args);
+                cat(args, &current_dir);
             }
             "cp" => {
                 cp(args);
             }
             "rm" => {
-                rm(args);
+                rm(args, &current_dir);
             }
             "mv" => {
                 mv(args);
             }
             "mkdir" => {
-                mkdir(args);
+                mkdir(args, &current_dir);
             }
             "exit" => exit(0),
             _ => {
