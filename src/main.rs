@@ -13,9 +13,9 @@ fn main() {
         let input = input.split_whitespace().collect::<Vec<_>>();
         let command = input[0];
         let args = &input[1..];
-        let commands = [
-            "echo", "cd", "ls", "pwd", "cat", "cp", "rm", "mv", "mkdir", "exit",
-        ];
+        // let commands = [
+        //     "echo", "cd", "ls", "pwd", "cat", "cp", "rm", "mv", "mkdir", "exit",
+        // ];
         match commands.contains(&command) {
             true => match command {
                 "echo" => {
