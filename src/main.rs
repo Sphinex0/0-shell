@@ -23,10 +23,10 @@ fn main() {
                 echo(args);
             }
             "pwd" => {
-                pwd(&mut current_dir);
+                pwd(&current_dir);
             }
             "cd" => {
-                cd(args);
+                cd(args,&mut current_dir);
             }
             "ls" => {
                 ls(args);
