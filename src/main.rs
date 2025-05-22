@@ -23,6 +23,7 @@ fn main() {
             println!();
             exit(0)
         }
+        
         let input = input.split_whitespace().collect::<Vec<_>>();
         if input.is_empty() {
             continue;
