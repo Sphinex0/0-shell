@@ -1,14 +1,14 @@
+use std::env::*;
 use std::io::Write;
 use std::io::stdin;
 use std::process::exit;
-use std::env::*;
 
 use shell::*;
 
 fn main() {
-    let mut current_dir =  current_dir().unwrap();
+    let mut current_dir = current_dir().unwrap();
     loop {
-        print!("\x1b[32m{} \x1b[33m$ \x1b[0m",current_dir.display());
+        print!("\x1b[31m~\x1b[32m{} \x1b[33m$ \x1b[0m", current_dir.display());
         std::io::stdout().flush().unwrap();
         let input = {
             let mut buf = String::new();
@@ -16,35 +16,42 @@ fn main() {
             buf
         };
         let input = input.split_whitespace().collect::<Vec<_>>();
+        if input.is_empty() {
+            continue;
+        }
         let command = input[0];
-        let args = &input[1..];
+        let args: Vec<&str> = if input.len() > 1 {
+            input[1..].to_vec()
+        } else {
+            Vec::new()
+        };
         match command {
             "echo" => {
-                echo(args);
+                echo(&args);
             }
             "pwd" => {
                 pwd(&current_dir);
             }
             "cd" => {
-                cd(args,&mut current_dir);
+                cd(&args, &mut current_dir);
             }
             "ls" => {
-                ls(args);
+                ls(&args);
             }
             "cat" => {
-                cat(args);
+                cat(&args);
             }
             "cp" => {
-                cp(args);
+                cp(&args);
             }
             "rm" => {
-                rm(args);
+                rm(&args);
             }
             "mv" => {
-                mv(args);
+                mv(&args);
             }
             "mkdir" => {
-                mkdir(args);
+                mkdir(&args);
             }
             "exit" => exit(0),
             _ => {
