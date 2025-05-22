@@ -16,13 +16,11 @@ pub fn cd(tab: &[&str], current_dir: &mut PathBuf) {
                 Some(p) => p,
                 None => path,
             };
-            current_dir.push(path);
-            match current_dir.read_dir() {
-                Ok(_) => {}
-                Err(_) => {
-                    current_dir.pop();
-                    println!("No such directory")
-                }
+            let mut copy_current_dir = current_dir.clone();
+            copy_current_dir.push(path);
+            match copy_current_dir.read_dir() {
+                Ok(_) => current_dir.push(path),
+                Err(err) => println!("No such directory err {:?}",err),
             }
         }
     };
