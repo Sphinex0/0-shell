@@ -3,6 +3,8 @@ use std::path::PathBuf;
 pub fn cd(tab: &[&str], current_dir: &mut PathBuf) {
     if tab.len() == 0 {
         current_dir.clear();
+        current_dir.push("/");
+        return;
     }
     match tab[0] {
         "../" | ".." => {
@@ -12,8 +14,8 @@ pub fn cd(tab: &[&str], current_dir: &mut PathBuf) {
         mut path => {
             path = match path.strip_prefix("./") {
                 Some(p) => p,
-                None => path
-            } ;
+                None => path,
+            };
             current_dir.push(path);
             match current_dir.read_dir() {
                 Ok(_) => {}
