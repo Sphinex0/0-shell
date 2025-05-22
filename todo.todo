@@ -12,3 +12,7 @@ cp
 rm (supporting -r)
 mv
 mkdir
+
+
+handle spaces in names (using "")
+handle path deleting
