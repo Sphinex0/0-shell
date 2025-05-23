@@ -4,7 +4,7 @@ use crate::print_error;
 
 pub fn cd(tab: &[String], current_dir: &mut PathBuf, history: &mut PathBuf) {
     if tab.len() == 0 {
-        current_dir.push(&history);
+        history.push(&current_dir);
         match home_dir() {
             Some(p) => current_dir.push(p),
             None => {}
@@ -16,7 +16,6 @@ pub fn cd(tab: &[String], current_dir: &mut PathBuf, history: &mut PathBuf) {
             history.push(&current_dir);
         }
         match path {
-            "/" => current_dir.push("/"),
             "~" => {
                 match home_dir() {
                     Some(p) => current_dir.push(p),
@@ -31,9 +30,10 @@ pub fn cd(tab: &[String], current_dir: &mut PathBuf, history: &mut PathBuf) {
                 if &path[0..1] == "/" {
                     let mut copy_current_dir = current_dir.clone();
                     copy_current_dir.push(path);
+                    copy_current_dir = copy_current_dir.components().collect::<PathBuf>();
                     match copy_current_dir.read_dir() {
-                        Ok(_) => current_dir.push(path),
-                        Err(err) => print_error(&err.to_string()),
+                        Ok(_) => *current_dir = copy_current_dir,
+                        Err(err) => print_error(&format!("cd: {err} : {path}")),
                     }
                 } else {
                     let table = path.split("/").collect::<Vec<_>>();
@@ -51,9 +51,7 @@ pub fn cd(tab: &[String], current_dir: &mut PathBuf, history: &mut PathBuf) {
                     }
                     match copy_current_dir.read_dir() {
                         Ok(_) => current_dir.push(copy_current_dir),
-                        Err(err) => {
-                            print_error(&format!("{path}: {err}"))
-                        }
+                        Err(err) => print_error(&format!("cd: {err} : {path}")),
                     }
                 }
             }
