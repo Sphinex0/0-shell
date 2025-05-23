@@ -4,7 +4,7 @@ use std::path::PathBuf;
 use crate::print_error;
 pub fn rm(args: &[String], current_dir: &PathBuf) {
     let path_copy: &mut PathBuf = &mut current_dir.clone();
-    let mut file_deleted: bool = false;
+    let mut action_done: bool = false;
     for arg in args {
         if arg != &"-r" {
             let mut tmp = PathBuf::from(arg);
@@ -24,10 +24,10 @@ pub fn rm(args: &[String], current_dir: &PathBuf) {
                     }
                 }
             }
-            file_deleted = true;
+            action_done = true;
         }
     }
-    if !file_deleted {
+    if !action_done {
         print_error("rm: missing operand")
     }
 }
