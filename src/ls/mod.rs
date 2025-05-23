@@ -147,13 +147,9 @@ fn ls_l(entries: ReadDir) {
 
 fn format_permissions(permissions: &Permissions) -> String {
     let mode = permissions.mode();
-    println!("moode {mode}");
-    let owner = (mode >> 6) & 0o7;
-        println!("moode {}", (mode >> 6));
-    let group = (mode >> 3) & 0o7;
-            println!("moode {}", (mode >> 3));
-
-    let others = mode & 0o7;
+    let owner = mode >> 6 ;
+    let group = mode >> 3 ;
+    let others = mode;
 
     let mut perm_str = String::with_capacity(9);
     
