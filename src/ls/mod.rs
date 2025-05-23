@@ -1,4 +1,4 @@
-use std::fs::ReadDir;
+use std::fs::{Metadata, Permissions, ReadDir};
 use std::os::unix::fs::PermissionsExt;
 use std::path::*;
 use std::{fs, io};
@@ -25,6 +25,9 @@ pub fn ls(tab: &[String], current_dir: &PathBuf) {
 
     match entries_result {
         Ok(entries) => match (a_flag, f_flag, l_flag) {
+            (false, false, true) => {
+                ls_l(entries)
+            }
             (false, true, false) => {
                 ls_f(entries);
             }
@@ -115,4 +118,51 @@ fn is_executable(path: &Path) -> bool {
     } else {
         false
     }
+}
+
+// ls -l
+fn ls_l(entries: ReadDir) {
+    for entry in entries {
+        match entry {
+            Ok(entry) => {
+                let metadata = entry.metadata().expect("Could not read entry");
+                let permissions = metadata.permissions();
+                let file_type = if metadata.is_dir() {
+                    'd'
+                } else {
+                    '-'
+                };
+                let permissions= format_permissions(&permissions);
+                if &entry.file_name().to_str().unwrap()[0..1] != "." {
+                    println!("{file_type}{} {}", permissions, entry.file_name().to_string_lossy());
+                }
+            }
+            Err(e) => {
+                eprintln!("Warning: Could not read directory entry: {}", e)
+            }
+        }
+    }
+    println!();
+}
+
+fn format_permissions(permissions: &Permissions) -> String {
+    let mode = permissions.mode();
+    let owner = mode >> 6 ;
+    let group = mode >> 3 ;
+    let others = mode;
+
+    let mut perm_str = String::with_capacity(9);
+    perm_str.push(if owner & 0o4 != 0 { 'r' } else { '-' });
+    perm_str.push(if owner & 0o2 != 0 { 'w' } else { '-' });
+    perm_str.push(if owner & 0o1 != 0 { 'x' } else { '-' });
+    
+    perm_str.push(if group & 0o4 != 0 { 'r' } else { '-' });
+    perm_str.push(if group & 0o2 != 0 { 'w' } else { '-' });
+    perm_str.push(if group & 0o1 != 0 { 'x' } else { '-' });
+    
+    perm_str.push(if others & 0o4 != 0 { 'r' } else { '-' });
+    perm_str.push(if others & 0o2 != 0 { 'w' } else { '-' });
+    perm_str.push(if others & 0o1 != 0 { 'x' } else { '-' });
+
+    perm_str
 }
