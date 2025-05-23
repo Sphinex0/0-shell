@@ -48,3 +48,7 @@ impl CostumSplit for String {
         (result, open_quote)
     }
 }
+
+pub fn print_error(message:&str){
+    eprintln!("\x1b[31m {}\x1b[0m",message)
+}
