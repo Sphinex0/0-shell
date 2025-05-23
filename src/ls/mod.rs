@@ -1,7 +1,7 @@
 use std::path::*;
 use std::{fs, io};
 
-pub fn ls(tab: &[&str], current_dir: &PathBuf) {
+pub fn ls(tab: &[String], current_dir: &PathBuf) {
     let mut target_dir_str = current_dir.clone();
     let mut a_flag = false;
     let mut f_flag = false;

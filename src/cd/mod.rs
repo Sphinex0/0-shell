@@ -1,12 +1,12 @@
 use std::path::PathBuf;
 
-pub fn cd(tab: &[&str], current_dir: &mut PathBuf) {
+pub fn cd(tab: &[String], current_dir: &mut PathBuf) {
     if tab.len() == 0 {
         current_dir.clear();
         current_dir.push("/");
         return;
     }
-    let path = tab[0];
+    let path = tab[0].as_str();
     let table = path.split("/").collect::<Vec<_>>();
     let mut copy_current_dir = current_dir.clone();
     for p in table {
