@@ -34,8 +34,10 @@ impl CostumSplit for String {
                 continue;
             }
             if ch == ';' && !open_quote {
-                result.push(arg);
-                arg = String::new();
+                if !arg.is_empty() {
+                    result.push(arg);
+                    arg = String::new();
+                }
                 big_table.push(result.clone());
                 result = vec![];
                 continue;
