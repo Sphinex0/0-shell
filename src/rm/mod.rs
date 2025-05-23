@@ -8,8 +8,19 @@ pub fn rm(args: &[String], current_dir: &PathBuf) {
     for arg in args {
         if arg != &"-r" {
             let mut tmp = path_copy.clone();
-            tmp.push(arg);
-
+            let table = arg.split("/").collect::<Vec<_>>();
+            for p in table {
+                match p {
+                    "." => {}
+                    ".." => {
+                        tmp.pop();
+                    }
+                    _ => {
+                        tmp.push(p);
+                    }
+                }
+            }
+            // println!("{:?}",tmp);
             match tmp.read_dir() {
                 Ok(_files) => {
                     if let Err(err) = fs::remove_dir_all(tmp) {
