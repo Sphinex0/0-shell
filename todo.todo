@@ -9,8 +9,8 @@ exit
 team : mohamed, adnane
 cat
 cp
-rm (supporting -r)
 mv
+rm (supporting -r)
 mkdir
 
 

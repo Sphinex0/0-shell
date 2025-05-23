@@ -1,3 +1,3 @@
-pub fn echo(args: &[&str]) {
+pub fn echo(args: &[String]) {
     println!("{}", args.join(" "))
 }
