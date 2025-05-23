@@ -1,3 +1,3 @@
-pub fn cp(tab: &[&str]) {
+pub fn cp(tab: &[String]) {
     
 }

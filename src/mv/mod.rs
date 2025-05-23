@@ -1,1 +1,1 @@
-pub fn mv(tab: &[&str]) {}
+pub fn mv(tab: &[String]) {}
