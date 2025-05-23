@@ -8,16 +8,25 @@ use shell::*;
 fn main() {
     let mut current_dir = current_dir().unwrap();
     let mut history_current_dir = current_dir.clone();
-    let mut hist:Vec<String> = Vec::new();
+    let mut hist: Vec<String> = Vec::new();
+    let home = match home_dir() {
+        Some(p) => p,
+        None => {
+            print_error("Impossible to get your home dir!");
+            return;
+        }
+    };
     loop {
-        print!(
-            "\x1b[1;31m➜  ~\x1b[32m{} \x1b[33m$ \x1b[0m",
-            current_dir.display()
-        );
+        let address = match current_dir.strip_prefix(&home) {
+            Ok(p) => "\x1b[1;31m~\x1b[1;32m/".to_string() + &p.display().to_string(),
+            Err(_) => current_dir.display().to_string(),
+        };
+
+        print!("\x1b[1;31m➜  \x1b[1;32m{} \x1b[33m$ \x1b[0m", address);
+
         std::io::stdout().flush().unwrap();
         let mut entry = String::new();
         stdin().read_line(&mut entry).unwrap();
-
 
         let (mut input, open_quote) = entry.costum_split();
         if input.is_empty() {
@@ -41,7 +50,7 @@ fn main() {
         if entry.split_whitespace().collect::<Vec<_>>().len() != 0 {
             hist.push(entry.clone());
         }
-        
+
         let command = input[0].as_str();
         let args: Vec<String> = if input.len() > 1 {
             input[1..].to_vec()
@@ -56,7 +65,7 @@ fn main() {
                 pwd(&current_dir);
             }
             "cd" => {
-                cd(&args, &mut current_dir, &mut history_current_dir);
+                cd(&args, &mut current_dir, &mut history_current_dir, &home);
             }
             "ls" => {
                 ls(&args, &current_dir);

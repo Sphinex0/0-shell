@@ -1,28 +1,18 @@
-use std::{env::home_dir, path::PathBuf};
+use std::path::PathBuf;
 
 use crate::print_error;
 
-pub fn cd(tab: &[String], current_dir: &mut PathBuf, history: &mut PathBuf) {
+pub fn cd(tab: &[String], current_dir: &mut PathBuf, history: &mut PathBuf, home: &PathBuf) {
     if tab.len() == 0 {
         history.push(&current_dir);
-        match home_dir() {
-            Some(p) => current_dir.push(p),
-            None => {}
-        }
-        return;
+        current_dir.push(home);
     } else {
         let path = tab[0].as_str();
         if path != "-" {
             history.push(&current_dir);
         }
         match path {
-            "~" => {
-                match home_dir() {
-                    Some(p) => current_dir.push(p),
-                    None => print_error("Impossible to get your home dir!"),
-                }
-                return;
-            }
+            "~" => current_dir.push(home),
             "-" => {
                 current_dir.push(&history);
             }
