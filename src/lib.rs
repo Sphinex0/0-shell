@@ -2,6 +2,7 @@ pub mod cat;
 pub mod cd;
 pub mod cp;
 pub mod echo;
+pub mod history;
 pub mod ls;
 pub mod mkdir;
 pub mod mv;
@@ -11,6 +12,7 @@ pub use cat::*;
 pub use cd::*;
 pub use cp::*;
 pub use echo::*;
+pub use history::*;
 pub use ls::*;
 pub use mkdir::*;
 pub use mv::*;
@@ -21,7 +23,7 @@ pub trait CostumSplit {
     fn costum_split(&self) -> (Vec<String>, bool);
 }
 impl CostumSplit for String {
-        fn costum_split(&self) -> (Vec<String>, bool) {
+    fn costum_split(&self) -> (Vec<String>, bool) {
         let mut result: Vec<String> = Vec::new();
         let mut arg = String::new();
         let mut open_quote = false;
