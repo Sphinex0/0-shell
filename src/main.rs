@@ -7,14 +7,15 @@ use shell::*;
 
 fn main() {
     let mut current_dir = current_dir().unwrap();
-    let mut history = current_dir.clone();
+    let mut history_current_dir = current_dir.clone();
+    let mut hist:Vec<&str> = Vec::new();
     loop {
         print!(
             "\x1b[31m~\x1b[32m{} \x1b[33m$ \x1b[0m",
             current_dir.display()
         );
         std::io::stdout().flush().unwrap();
-        let input = {
+        let input: String = {
             let mut buf = String::new();
             stdin().read_line(&mut buf).unwrap();
             buf
@@ -38,7 +39,7 @@ fn main() {
                 pwd(&current_dir);
             }
             "cd" => {
-                cd(&args, &mut current_dir, &mut history);
+                cd(&args, &mut current_dir, &mut history_current_dir);
             }
             "ls" => {
                 ls(&args, &current_dir);
@@ -57,6 +58,9 @@ fn main() {
             }
             "mkdir" => {
                 mkdir(&args, &current_dir);
+            }
+            "history" => {
+                history(&hist);
             }
             "exit" => exit(0),
             _ => {
