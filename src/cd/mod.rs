@@ -51,8 +51,8 @@ pub fn cd(tab: &[String], current_dir: &mut PathBuf, history: &mut PathBuf) {
                     }
                     match copy_current_dir.read_dir() {
                         Ok(_) => current_dir.push(copy_current_dir),
-                        Err(_) => {
-                            print_error(&("cd: no such file or directory: ".to_string() + path))
+                        Err(err) => {
+                            print_error(&format!("{path}: {err}"))
                         }
                     }
                 }
