@@ -13,12 +13,12 @@ pub fn rm(args: &[String], current_dir: &PathBuf) {
             match tmp.read_dir() {
                 Ok(_files) => {
                     if let Err(err) = fs::remove_dir_all(tmp) {
-                        print_error(&err.to_string());
+                        print_error(&format!("{arg}: {err}"));
                     }
                 }
                 Err(_err) => {
                     if let Err(err) = fs::remove_file(tmp) {
-                        print_error(&err.to_string());
+                        print_error(&format!("{arg}: {err}"));
                     }
                 }
             }
