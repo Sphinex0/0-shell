@@ -9,23 +9,12 @@ exit
 team : mohamed, adnane
 cat
 cp
-rm (supporting -r)
 mv
+rm (supporting -r)
 mkdir
 
-pub fn ls(tab: &[&str], current_dir: &PathBuf) -> String {
-    let mut target_dir = current_dir.clone(); 
-    let mut a_flag = false;
-    let mut f_flag = false;
-    let mut l_flag = false;
 
-    for flag in tab {
-        let target = flag.trim_start_matches('-');
-        match target {
-            "a" => a_flag = true,
-            "f" => f_flag = true,
-            "l" => l_flag = true,
-            _ => {
-                target_dir = PathBuf::from(target);
-            }
-        }
+handle spaces in names (using "")
+handle path deleting
+handle ctrl+c not crashing
+hadnle cat witout arguments

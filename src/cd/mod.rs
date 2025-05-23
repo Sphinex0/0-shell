@@ -1,11 +1,11 @@
 use std::{env::home_dir, path::PathBuf};
 
-pub fn cd(tab: &[&str], current_dir: &mut PathBuf, history: &mut PathBuf) {
+pub fn cd(tab: &[String], current_dir: &mut PathBuf, history: &mut PathBuf) {
     if tab.len() == 0 {
         *history = current_dir.clone();
         *current_dir = PathBuf::from("/");
     } else {
-        let path = tab[0];
+        let path = tab[0].as_str();
         if path != "-" {
             *history = current_dir.clone();
         }

@@ -3,7 +3,7 @@ use std::os::unix::fs::PermissionsExt;
 use std::path::*;
 use std::{fs, io};
 
-pub fn ls(tab: &[&str], current_dir: &PathBuf) {
+pub fn ls(tab: &[String], current_dir: &PathBuf) {
     let mut target_dir_str = current_dir.clone();
     let mut a_flag = false;
     let mut f_flag = false;
@@ -54,6 +54,7 @@ pub fn ls(tab: &[&str], current_dir: &PathBuf) {
     }
 }
 
+// Classic ls && -a flag
 fn myls(entries: ReadDir, dr: bool) {
     for entry in entries {
         match entry {
@@ -74,7 +75,7 @@ fn myls(entries: ReadDir, dr: bool) {
     println!();
 }
 
-
+// -F flag //
 pub fn ls_f(entries: ReadDir) {
     for entry in entries {
         if let Ok(entry) = entry {
