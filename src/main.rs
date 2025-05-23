@@ -11,7 +11,7 @@ fn main() {
     let mut hist:Vec<&str> = Vec::new();
     loop {
         print!(
-            "\x1b[31m~\x1b[32m{} \x1b[33m$ \x1b[0m",
+            "\x1b[1;31m~\x1b[32m{} \x1b[33m$ \x1b[0m",
             current_dir.display()
         );
         std::io::stdout().flush().unwrap();
