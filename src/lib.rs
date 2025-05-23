@@ -20,16 +20,24 @@ pub use pwd::*;
 pub use rm::*;
 
 pub trait CostumSplit {
-    fn costum_split(&self) -> (Vec<String>, bool);
+    fn costum_split(&self) -> (Vec<String>, bool, Vec<Vec<String>>);
 }
 impl CostumSplit for String {
-    fn costum_split(&self) -> (Vec<String>, bool) {
+    fn costum_split(&self) -> (Vec<String>, bool, Vec<Vec<String>>) {
         let mut result: Vec<String> = Vec::new();
+        let mut big_table: Vec<Vec<String>> = Vec::new();
         let mut arg = String::new();
         let mut open_quote = false;
         for ch in self.chars() {
             if ch == '"' {
                 open_quote = !open_quote;
+                continue;
+            }
+            if ch == ';' && !open_quote {
+                result.push(arg);
+                arg = String::new();
+                big_table.push(result.clone());
+                result = vec![];
                 continue;
             }
             if ch.is_whitespace() && !open_quote {
@@ -45,10 +53,14 @@ impl CostumSplit for String {
             result.push(arg);
         }
 
-        (result, open_quote)
+        if !result.is_empty() {
+            big_table.push(result.clone());
+        }
+
+        (result, open_quote, big_table)
     }
 }
 
-pub fn print_error(message:&str){
-    eprintln!("\x1b[31m {}\x1b[0m",message)
+pub fn print_error(message: &str) {
+    eprintln!("\x1b[31m {}\x1b[0m", message)
 }
