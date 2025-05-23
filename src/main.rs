@@ -8,15 +8,16 @@ use shell::*;
 fn main() {
     let mut current_dir = current_dir().unwrap();
     let mut history_current_dir = current_dir.clone();
-    let mut hist:Vec<&str> = Vec::new();
+    let mut hist:Vec<String> = Vec::new();
     loop {
         print!(
-            "\x1b[1;31m~\x1b[32m{} \x1b[33m$ \x1b[0m",
+            "\x1b[1;31m➜  ~\x1b[32m{} \x1b[33m$ \x1b[0m",
             current_dir.display()
         );
         std::io::stdout().flush().unwrap();
         let mut entry = String::new();
         stdin().read_line(&mut entry).unwrap();
+
 
         let (mut input, open_quote) = entry.costum_split();
         if input.is_empty() {
@@ -35,6 +36,10 @@ fn main() {
                     break;
                 }
             }
+        }
+
+        if entry.split_whitespace().collect::<Vec<_>>().len() != 0 {
+            hist.push(entry.clone());
         }
         
         let command = input[0].as_str();
@@ -76,7 +81,7 @@ fn main() {
             }
             "exit" => exit(0),
             _ => {
-                println!("\x1b[31m Command '<{entry}>' not found\x1b[0m")
+                println!("\x1b[31m Command '<{command}>' not found\x1b[0m")
             }
         }
     }

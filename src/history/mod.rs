@@ -1,5 +1,3 @@
-pub fn history(hist: &Vec<&str>) {
-    for command in hist {
-        println!("{}", command);
-    }
+pub fn history(hist: &[String]) {
+    print!("{}", hist.join(""));
 }
