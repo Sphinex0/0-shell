@@ -12,7 +12,7 @@ pub fn mkdir(args: &[String], current_dir: &PathBuf) {
         tmp.push(arg);
 
         if let Err(err) = fs::create_dir(tmp) {
-            print_error(&err.to_string());
+            print_error(&format!("{arg}: {err}"));
         }
         action_done = true;
     }

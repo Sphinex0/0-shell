@@ -14,7 +14,7 @@ pub fn cat(args: &[String], current_dir: &PathBuf) {
 
         match std::fs::read_to_string(tmp) {
             Ok(content)=>print!("{content}"),
-            Err(err)=>print_error(&format!("{arg}: {}",err.to_string()))
+            Err(err)=>print_error(&format!("{arg}: {err}"))
         }
 
         action_done = true;
