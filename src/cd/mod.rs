@@ -20,7 +20,7 @@ pub fn cd(tab: &[String], current_dir: &mut PathBuf, history: &mut PathBuf) {
             "~" => {
                 match home_dir() {
                     Some(p) => current_dir.push(p),
-                    None => {}
+                    None => print_error("Impossible to get your home dir!"),
                 }
                 return;
             }
@@ -33,9 +33,7 @@ pub fn cd(tab: &[String], current_dir: &mut PathBuf, history: &mut PathBuf) {
                     copy_current_dir.push(path);
                     match copy_current_dir.read_dir() {
                         Ok(_) => current_dir.push(path),
-                        Err(_) => {
-                            print_error(&("cd: no such file or directory: ".to_string() + path))
-                        }
+                        Err(err) => print_error(&err.to_string()),
                     }
                 } else {
                     let table = path.split("/").collect::<Vec<_>>();
