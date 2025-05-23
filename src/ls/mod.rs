@@ -54,6 +54,7 @@ pub fn ls(tab: &[&str], current_dir: &PathBuf) {
     }
 }
 
+// Classic ls && -a flag
 fn myls(entries: ReadDir, dr: bool) {
     for entry in entries {
         match entry {
@@ -74,7 +75,7 @@ fn myls(entries: ReadDir, dr: bool) {
     println!();
 }
 
-
+// -F flag //
 pub fn ls_f(entries: ReadDir) {
     for entry in entries {
         if let Ok(entry) = entry {
