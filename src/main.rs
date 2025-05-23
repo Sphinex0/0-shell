@@ -11,7 +11,7 @@ fn main() {
     let mut hist:Vec<String> = Vec::new();
     loop {
         print!(
-            "\x1b[1;31m~\x1b[32m{} \x1b[33m$ \x1b[0m",
+            "\x1b[1;31m➜  ~\x1b[32m{} \x1b[33m$ \x1b[0m",
             current_dir.display()
         );
         std::io::stdout().flush().unwrap();
@@ -77,11 +77,11 @@ fn main() {
                 mkdir(&args, &current_dir);
             }
             "history" => {
-                history(&hist,args);
+                history(&hist);
             }
             "exit" => exit(0),
             _ => {
-                println!("\x1b[31m Command '<{entry}>' not found\x1b[0m")
+                println!("\x1b[31m Command '<{command}>' not found\x1b[0m")
             }
         }
     }
