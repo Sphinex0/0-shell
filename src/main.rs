@@ -19,17 +19,13 @@ fn main() {
             stdin().read_line(&mut buf).unwrap();
             buf
         };
-        if input.len() == 0 {
-            println!();
-            exit(0)
-        }
         
-        let input = input.split_whitespace().collect::<Vec<_>>();
+        let (input, open_quote) = input.costum_split();
         if input.is_empty() {
             continue;
         }
-        let command = input[0];
-        let args: Vec<&str> = if input.len() > 1 {
+        let command = input[0].as_str();
+        let args: Vec<String> = if input.len() > 1 {
             input[1..].to_vec()
         } else {
             Vec::new()
@@ -48,19 +44,19 @@ fn main() {
                 ls(&args, &current_dir);
             }
             "cat" => {
-                cat(&args);
+                cat(&args, &current_dir);
             }
             "cp" => {
                 cp(&args);
             }
             "rm" => {
-                rm(&args);
+                rm(&args, &current_dir);
             }
             "mv" => {
                 mv(&args);
             }
             "mkdir" => {
-                mkdir(&args);
+                mkdir(&args, &current_dir);
             }
             "exit" => exit(0),
             _ => {
