@@ -20,7 +20,7 @@ fn main() {
         if input.is_empty() {
             continue;
         }
-        let command = input[0];
+        let command = input[0].as_str();
         let args: Vec<String> = if input.len() > 1 {
             input[1..].to_vec()
         } else {

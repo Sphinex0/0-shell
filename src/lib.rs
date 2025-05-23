@@ -30,7 +30,7 @@ impl CostumSplit for String {
                 open_quote = !open_quote;
                 continue;
             }
-            if ch == ' ' && !open_quote {
+            if ch.is_whitespace() && !open_quote {
                 if !arg.is_empty() {
                     result.push(arg);
                     arg = String::new();
