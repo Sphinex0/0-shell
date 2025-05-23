@@ -152,7 +152,6 @@ fn format_permissions(permissions: &Permissions) -> String {
     let others = mode;
 
     let mut perm_str = String::with_capacity(9);
-    
     perm_str.push(if owner & 0o4 != 0 { 'r' } else { '-' });
     perm_str.push(if owner & 0o2 != 0 { 'w' } else { '-' });
     perm_str.push(if owner & 0o1 != 0 { 'x' } else { '-' });
