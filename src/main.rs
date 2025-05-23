@@ -26,9 +26,13 @@ fn main() {
 
         std::io::stdout().flush().unwrap();
         let mut entry = String::new();
-        stdin().read_line(&mut entry).unwrap();
+        let size = stdin().read_line(&mut entry).unwrap();
+        if size == 0 {
+            println!();
+            exit(0)
+        }
 
-        let (mut input, open_quote) = entry.costum_split();
+        let (mut input,mut open_quote) = entry.costum_split();
         if input.is_empty() {
             continue;
         }
@@ -37,14 +41,24 @@ fn main() {
                 print!("\x1b[33m> \x1b[0m");
                 let mut input_tmp = String::new();
                 std::io::stdout().flush().unwrap();
-                stdin().read_line(&mut input_tmp).unwrap();
+                let size = stdin().read_line(&mut input_tmp).unwrap();
+                if size == 0 {
+                    println!();
+                    break;
+                }
                 entry.push_str(&input_tmp);
-                let (input_tmp, open_quote) = entry.costum_split();
+                let (input_tmp, open_quote2) = entry.costum_split();
+                open_quote = open_quote2 ;
                 input = input_tmp;
                 if !open_quote {
                     break;
                 }
             }
+        }
+
+        if open_quote {
+            print_error("Syntax error: Unterminated quoted string");
+            continue;
         }
 
         if entry.split_whitespace().collect::<Vec<_>>().len() != 0 {
