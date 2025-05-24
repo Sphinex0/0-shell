@@ -57,5 +57,6 @@ fn parse_entry(entry: &String) {
             _ => res.push(ch),
         }
     }
+    print!("{:#?}",res);
     print!("{res}");
 }
