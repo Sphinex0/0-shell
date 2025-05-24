@@ -32,10 +32,11 @@ fn main() {
             exit(0)
         }
 
-        let (mut input, mut open_quote, mut big_table) = entry.costum_split();
+        let (mut input, mut open_quote) = entry.costum_split();
         if input.is_empty() {
             continue;
         }
+
         if open_quote {
             loop {
                 print!("\x1b[33m> \x1b[0m");
@@ -47,8 +48,7 @@ fn main() {
                     break;
                 }
                 entry.push_str(&input_tmp);
-                let (input_tmp, open_quote2, big_table2) = entry.costum_split();
-                big_table = big_table2;
+                let (input_tmp, open_quote2) = entry.costum_split();
                 open_quote = open_quote2;
                 input = input_tmp;
                 if !open_quote {
@@ -56,8 +56,6 @@ fn main() {
                 }
             }
         }
-
-        println!("big_table => {:?}", big_table);
 
         if open_quote {
             print_error("Syntax error: Unterminated quoted string");
@@ -68,50 +66,47 @@ fn main() {
             hist.push(entry.clone());
         }
 
-        for tab in big_table {
-            let command = tab[0].as_str();
-            let args: Vec<String> = if tab.len() > 1 {
-                tab[1..].to_vec()
-            } else {
-                Vec::new()
-            };
-            match command {
-                "echo" => {
-                    echo(&args);
-                }
-                "pwd" => {
-                    pwd(&current_dir);
-                }
-                "cd" => {
-                    cd(&args, &mut current_dir, &mut history_current_dir, &home);
-                }
-                "ls" => {
-                    ls(&args, &current_dir);
-                }
-                "cat" => {
-                    cat(&args, &current_dir);
-                }
-                "cp" => {
-                    cp(&args);
-                }
-                "rm" => {
-                    rm(&args, &current_dir);
-                }
-                "mv" => {
-                    mv(&args);
-                }
-                "mkdir" => {
-                    mkdir(&args, &current_dir);
-                }
-                "history" => {
-                    history(&hist);
-                }
-                "exit" => exit(0),
-                _ => {
-                    println!("\x1b[31m Command '<{command}>' not found\x1b[0m")
-                }
+        let command = input[0].as_str();
+        let args: Vec<String> = if input.len() > 1 {
+            input[1..].to_vec()
+        } else {
+            Vec::new()
+        };
+        match command {
+            "echo" => {
+                echo(&args, &entry);
+            }
+            "pwd" => {
+                pwd(&current_dir);
+            }
+            "cd" => {
+                cd(&args, &mut current_dir, &mut history_current_dir, &home);
+            }
+            "ls" => {
+                ls(&args, &current_dir);
+            }
+            "cat" => {
+                cat(&args, &current_dir);
+            }
+            "cp" => {
+                cp(&args);
+            }
+            "rm" => {
+                rm(&args, &current_dir);
+            }
+            "mv" => {
+                mv(&args);
+            }
+            "mkdir" => {
+                mkdir(&args, &current_dir);
+            }
+            "history" => {
+                history(&hist);
+            }
+            "exit" => exit(0),
+            _ => {
+                println!("\x1b[31m Command '<{command}>' not found\x1b[0m")
             }
         }
     }
 }
-
