@@ -1,3 +1,3 @@
-pub fn cp(tab: &[String]) {
-    
+pub fn cp(tab: &[String]){
+    println!("{tab:?}")
 }

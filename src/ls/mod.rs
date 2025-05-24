@@ -1,4 +1,4 @@
-use std::fs::{Metadata, Permissions, ReadDir};
+use std::fs::{Permissions, ReadDir};
 use std::os::unix::fs::PermissionsExt;
 use std::os::unix::fs::FileTypeExt;
 use std::path::*;

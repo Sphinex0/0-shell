@@ -1,1 +1,3 @@
-pub fn mv(tab: &[String]) {}
+pub fn mv(tab: &[String]) {
+    println!("{tab:?}")
+}
