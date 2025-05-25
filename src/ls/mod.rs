@@ -147,10 +147,11 @@ fn ls_l(entries: ReadDir) {
                     '?'
                 };
                 let permissions = format_permissions(&permissions);
+                let hardlink = metadata.nlink();
                 if &entry.file_name().to_str().unwrap()[0..1] != "." {
                     total_blocks += metadata.blocks();
                     println!(
-                        "{type_char}{} {}",
+                        "{type_char}{} {hardlink} {}",
                         permissions,
                         entry.file_name().to_string_lossy()
                     );
@@ -161,7 +162,7 @@ fn ls_l(entries: ReadDir) {
             }
         }
     }
-    println!("total {}", total_blocks/2);
+    println!("total {}", total_blocks / 2);
     println!();
 }
 
