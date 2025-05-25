@@ -1,6 +1,7 @@
 use std::fs::{Permissions, ReadDir};
-use std::os::unix::fs::PermissionsExt;
 use std::os::unix::fs::FileTypeExt;
+use std::os::unix::fs::MetadataExt;
+use std::os::unix::fs::PermissionsExt;
 use std::path::*;
 use std::{fs, io};
 
@@ -121,6 +122,7 @@ fn is_executable(path: &Path) -> bool {
 
 // ls -l
 fn ls_l(entries: ReadDir) {
+    let mut total_blocks = 0;
     for entry in entries {
         match entry {
             Ok(entry) => {
@@ -144,9 +146,9 @@ fn ls_l(entries: ReadDir) {
                 } else {
                     '?'
                 };
-
                 let permissions = format_permissions(&permissions);
                 if &entry.file_name().to_str().unwrap()[0..1] != "." {
+                    total_blocks += metadata.blocks();
                     println!(
                         "{type_char}{} {}",
                         permissions,
@@ -159,6 +161,7 @@ fn ls_l(entries: ReadDir) {
             }
         }
     }
+    println!("total {}", total_blocks/2);
     println!();
 }
 
