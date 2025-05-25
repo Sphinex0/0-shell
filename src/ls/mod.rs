@@ -3,7 +3,9 @@ use std::os::unix::fs::FileTypeExt;
 use std::os::unix::fs::MetadataExt;
 use std::os::unix::fs::PermissionsExt;
 use std::path::*;
+use std::fs::Metadata;
 use std::{fs, io};
+use users::*;
 
 pub fn ls(tab: &[String], current_dir: &PathBuf) {
     let mut target_dir_str = current_dir.clone();
@@ -148,6 +150,7 @@ fn ls_l(entries: ReadDir) {
                 };
                 let permissions = format_permissions(&permissions);
                 let hardlink = metadata.nlink();
+                let grp = get_user_and_group(&metadata);
                 if &entry.file_name().to_str().unwrap()[0..1] != "." {
                     total_blocks += metadata.blocks();
                     println!(
@@ -164,6 +167,12 @@ fn ls_l(entries: ReadDir) {
     }
     println!("total {}", total_blocks / 2);
     println!();
+}
+
+fn get_user_and_group(metadata: &Metadata) -> Option<User> {
+    let uid = metadata.uid();
+    let user = get_user_by_uid(uid);
+    user
 }
 
 fn format_permissions(permissions: &Permissions) -> String {
