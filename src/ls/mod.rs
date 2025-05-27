@@ -150,12 +150,20 @@ fn ls_l(entries: ReadDir) {
                 };
                 let permissions = format_permissions(&permissions);
                 let hardlink = metadata.nlink();
-                let grp = get_user_and_group(&metadata);
+                let user = get_usr(&metadata).unwrap();
+                let grp = get_grp(&metadata).unwrap();
+                // file size
+                let file_size = metadata.size();
+                // Last modification date and time
+                let last_mdf_time = metadata.modified().unwrap();
                 if &entry.file_name().to_str().unwrap()[0..1] != "." {
                     total_blocks += metadata.blocks();
                     println!(
-                        "{type_char}{} {hardlink} {}",
+                        "{type_char}{} {hardlink} {} {} {file_size} {:?} {}",
                         permissions,
+                        user.name().to_str().unwrap(),
+                        grp.name().to_str().unwrap(),
+                        last_mdf_time,
                         entry.file_name().to_string_lossy()
                     );
                 }
@@ -169,10 +177,16 @@ fn ls_l(entries: ReadDir) {
     println!();
 }
 
-fn get_user_and_group(metadata: &Metadata) -> Option<User> {
+fn get_usr(metadata: &Metadata) -> Option<User> {
     let uid = metadata.uid();
     let user = get_user_by_uid(uid);
     user
+}
+
+fn get_grp(metadata: &Metadata) -> Option<Group> {
+    let gid = metadata.gid();
+    let grp = get_group_by_gid(gid);
+    grp
 }
 
 fn format_permissions(permissions: &Permissions) -> String {
