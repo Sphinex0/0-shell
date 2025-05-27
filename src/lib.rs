@@ -22,93 +22,60 @@ pub use rm::*;
 pub trait CostumSplit {
     fn costum_split(&self) -> (Vec<String>, bool);
 }
+
 impl CostumSplit for String {
     fn costum_split(&self) -> (Vec<String>, bool) {
         let mut result: Vec<String> = Vec::new();
-        let mut arg = String::new();
-        let mut open_quote = false;
+        let mut arg: String = String::new();
+        let mut open_double_quote = false;
+        let mut open_single_quote = false;
+        let mut open_backslash_quote = false;
+        let mut open_backtick_quote = false;
 
+        let special = ['"', '\'', '\\', '`'];
+        let mut chs = self.clone();
+        chs.pop();
 
-        // let mut chars = self.chars().peekable();
-        // while let Some(ch) = chars.next() {
-        //     println!("ch: {ch}");
-        //     match ch {
-        //         '\\' => match chars.next() {
-        //             Some(ch2) => match (ch2, open_quote) {
-        //                 ('n', true) => arg.push('\n'),
-        //                 ('r', true) => arg.push('\r'),
-        //                 ('t', true) => arg.push('\t'),
-        //                 ('a', true) => arg.push(7 as char),
-        //                 ('b', true) => arg.push(8 as char),
-        //                 ('\\', false) => match chars.next() {
-        //                     Some(ch3) => match ch3 {
-        //                         'n' => arg.push('\n'),
-        //                         'r' => arg.push('\r'),
-        //                         't' => arg.push('\t'),
-        //                         'a' => arg.push(7 as char),
-        //                         'b' => arg.push(8 as char),
-        //                         _ => {
-        //                             arg.push_str(&format!("\\{ch3}"));
-        //                         }
-        //                     },
-        //                     None => arg.push('\\'),
-        //                 },
-        //                 (a, true) => {
-        //                     // println!("dddddd => {:?}", a);
-        //                     arg.push(a);
-        //                 }
-        //                 (b, false) => {
-        //                     if b.is_whitespace() {
-        //                         result.push(arg);
-        //                         arg = String::new();
-        //                     } else {
-        //                         arg.push(b);
-        //                     }
-        //                 }
-        //             },
-        //             None => {}
-        //         },
-        //         '"' => {
-        //             open_quote = !open_quote;
-        //         }
-        //         _ => {
-        //             if ch.is_whitespace() && !open_quote {
-        //                 result.push(arg);
-        //                 arg = String::new();
-        //             } else {
-        //                 arg.push(ch);
-        //             }
-        //         }
-        //     }
-        // }
-
-        // originale code 
-        for (i, ch) in self.char_indices() {
-            if (ch == '"' && i == 0)
-                || (ch == '"' && self[i - 1..i].chars().next().unwrap_or(' ') != '\\')
-            {
-                open_quote = !open_quote;
-                continue;
-            }
-            if ch.is_whitespace() && !open_quote {
-                if !arg.is_empty() {
-                    result.push(arg);
-                    arg = String::new();
+        let mut chars = chs.chars().peekable();
+        while let Some(ch) = chars.next() {
+            match ch {
+                '"' => open_double_quote = !open_double_quote,
+                '\'' => open_single_quote = !open_single_quote,
+                '`' => open_backtick_quote = !open_backtick_quote,
+                '\\' => {
+                    if !open_backslash_quote {
+                        open_backslash_quote = true;
+                        match chars.peek() {
+                            Some(ch2) => {
+                                open_backslash_quote = false;
+                                arg.push(*ch2);
+                                chars.next();
+                            }
+                            _ => {}
+                        }
+                    }
                 }
-            } else {
-                arg.push(ch)
+
+                _ => {
+                    if ch.is_whitespace() {
+                        result.push(arg);
+                        arg = String::new();
+                    } else {
+                        arg.push(ch);
+                    }
+                }
             }
         }
-
-
 
         if !arg.is_empty() {
             result.push(arg);
         }
 
-        // println!("{:?}", result);
+        println!("{:?}", result);
+        let open =
+            open_double_quote || open_single_quote || open_backslash_quote || open_backtick_quote;
 
-        (result, open_quote)
+        (result, open)
     }
 }
 
