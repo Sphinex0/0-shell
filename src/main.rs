@@ -27,17 +27,13 @@ fn main() {
         std::io::stdout().flush().unwrap();
         let mut entry = String::new();
         let size = stdin().read_line(&mut entry).unwrap();
+        entry.pop();
         if size == 0 {
             println!();
             exit(0)
         }
 
         let (mut input, mut open_quote) = entry.costum_split();
-        if input.is_empty() {
-            continue;
-        }
-
-        println!("{}",open_quote);
 
         if open_quote {
             loop {
@@ -45,6 +41,7 @@ fn main() {
                 let mut input_tmp = String::new();
                 std::io::stdout().flush().unwrap();
                 let size = stdin().read_line(&mut input_tmp).unwrap();
+                input_tmp.pop();
                 if size == 0 {
                     println!();
                     break;
@@ -66,6 +63,10 @@ fn main() {
 
         if entry.split_whitespace().collect::<Vec<_>>().len() != 0 {
             hist.push(entry.clone());
+        }
+
+        if input.is_empty() {
+            continue;
         }
 
         let command = input[0].as_str();

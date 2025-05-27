@@ -33,10 +33,8 @@ impl CostumSplit for String {
         let mut open_backtick_quote = false;
 
         let special = ['"', '\'', '\\', '`'];
-        let mut chs = self.clone();
-        chs.pop();
 
-        let mut chars = chs.chars().peekable();
+        let mut chars = self.chars().peekable();
         while let Some(ch) = chars.next() {
             match ch {
                 '"' => open_double_quote = !open_double_quote,
@@ -51,7 +49,9 @@ impl CostumSplit for String {
                                 arg.push(*ch2);
                                 chars.next();
                             }
-                            _ => {}
+                            _ => {
+                                
+                            }
                         }
                     }
                 }
@@ -72,6 +72,7 @@ impl CostumSplit for String {
         }
 
         println!("{:?}", result);
+
         let open =
             open_double_quote || open_single_quote || open_backslash_quote || open_backtick_quote;
 
