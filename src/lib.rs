@@ -20,13 +20,18 @@ pub use pwd::*;
 pub use rm::*;
 
 pub trait CostumSplit {
-    fn costum_split(&self) -> (Vec<String>, bool);
+    fn costum_split(&self, commands: &mut Vec<Vec<String>>) -> bool;
 }
 
 impl CostumSplit for String {
-    fn costum_split(&self) -> (Vec<String>, bool) {
+    fn costum_split(&self, commands: &mut Vec<Vec<String>>) -> bool {
         let mut result: Vec<String> = Vec::new();
         let mut arg: String = String::new();
+        commands.push(Vec::new());
+
+        let mut backtick_result: Vec<String> = Vec::new();
+        let mut backtick_arg: String = String::new();
+
         let mut open_double_quote = false;
         let mut open_single_quote = false;
         let mut open_backslash_quote = false;
@@ -39,7 +44,17 @@ impl CostumSplit for String {
             match ch {
                 '"' => open_double_quote = !open_double_quote,
                 '\'' => open_single_quote = !open_single_quote,
-                '`' => open_backtick_quote = !open_backtick_quote,
+                '`' => {
+                    open_backtick_quote = !open_backtick_quote;
+                    if !open_backtick_quote {
+                        if !backtick_arg.is_empty() {
+                            backtick_result.push(backtick_arg.clone());
+                            backtick_arg = String::new();
+                        }
+                        commands.push(backtick_result.clone());
+                        backtick_result = Vec::new();
+                    }
+                }
                 '\\' => {
                     if !open_backslash_quote {
                         open_backslash_quote = true;
@@ -49,19 +64,36 @@ impl CostumSplit for String {
                                 arg.push(*ch2);
                                 chars.next();
                             }
-                            _ => {
-                                
-                            }
+                            _ => {}
                         }
                     }
                 }
 
                 _ => {
-                    if ch.is_whitespace() {
-                        result.push(arg);
-                        arg = String::new();
+                    if open_backtick_quote {
+                        if ch.is_whitespace()
+                            && !(open_double_quote
+                                || open_single_quote
+                                || open_backslash_quote)
+                        {
+                            backtick_result.push(backtick_arg);
+                            backtick_arg = String::new();
+                        } else {
+
+                            backtick_arg.push(ch);
+                        }
                     } else {
-                        arg.push(ch);
+                        if ch.is_whitespace()
+                            && !(open_double_quote
+                                || open_single_quote
+                                || open_backslash_quote
+                                || open_backtick_quote)
+                        {
+                            result.push(arg);
+                            arg = String::new();
+                        } else {
+                            arg.push(ch);
+                        }
                     }
                 }
             }
@@ -71,12 +103,15 @@ impl CostumSplit for String {
             result.push(arg);
         }
 
-        println!("{:?}", result);
+        // println!("{:?}", result);
 
         let open =
             open_double_quote || open_single_quote || open_backslash_quote || open_backtick_quote;
 
-        (result, open)
+        commands[0] = result;
+        
+        println!("{commands:#?}");
+        open
     }
 }
 
