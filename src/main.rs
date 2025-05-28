@@ -120,6 +120,7 @@ fn main() {
                 history(&hist);
             }
             "exit" => exit(0),
+            "clear" => println!("\x1Bc"),
             _ => {
                 println!("\x1b[31m Command '<{command}>' not found\x1b[0m")
             }
