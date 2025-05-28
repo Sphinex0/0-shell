@@ -1,9 +1,10 @@
-pub fn echo(args: &[String], _entry: &String) {
-    println!("{}", args.join(""));
+pub fn echo(args: &[String], _entry: &String)->String {
+    // println!("{}", args.join(""));
+    args.join(" ")
     // parse_entry(entry);
 }
 
-fn parse_entry(entry: &String) {
+fn parse_entry(entry: &String) -> String {
     let le: usize = entry.split_whitespace().nth(0).unwrap().len();
     let entry = entry[le + 1..].to_string();
     let mut open_quote = false;
@@ -58,6 +59,7 @@ fn parse_entry(entry: &String) {
             _ => res.push(ch),
         }
     }
-    print!("{:#?}", res);
-    print!("{res}");
+    // print!("{:#?}", res);
+    // print!("{res}");
+    res
 }
