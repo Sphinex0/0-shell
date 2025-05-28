@@ -69,6 +69,19 @@ fn main() {
             continue;
         }
 
+        let res: Vec<&str> = input.split(" ").collect();
+        let mut input: Vec<String> = vec![];
+        for a in res {
+            input.push(a.to_string());
+        }
+
+        // let command = input[0].as_str();
+        // let args: Vec<String> = if input.len() > 1 {
+        //     input[1..].to_vec()
+        // } else {
+        //     Vec::new()
+        // };
+
         let command = input[0].as_str();
         let args: Vec<String> = if input.len() > 1 {
             input[1..].to_vec()
