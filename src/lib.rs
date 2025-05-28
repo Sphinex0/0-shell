@@ -20,31 +20,29 @@ pub use pwd::*;
 pub use rm::*;
 
 pub trait CustomSplit {
-    fn custom_split(&self) -> (Vec<String>, bool);
+    fn custom_split(&self) -> (String, bool);
 }
 
 impl CustomSplit for String {
-    fn custom_split(&self) -> (Vec<String>, bool) {
-        let mut result: Vec<String> = Vec::new();
-        let mut arg: String = String::new();
+    fn custom_split(&self) -> (String, bool) {
+        let mut result: String = String::new();
         let mut open_double_quote = false;
         let mut open_single_quote = false;
         let mut open_backslash = false;
         let mut open_backtick = false;
+        let special = ['"', '\'', '\\', '`'];
 
         let new_vec: Vec<&str> = self.split('\n').collect();
+        let mut last_index = 0;
 
         for (i, next_str) in new_vec.iter().enumerate() {
             if open_double_quote {
-                // open_double_quote = false;
-                arg.push('\n');
+                result.push('\n');
             }
             if next_str.is_empty() {
                 if open_backslash && i != new_vec.len() - 1 {
                     open_backslash = false;
                 }
-
-                // arg.push('\n');
             }
             let mut chars = next_str.chars().peekable();
             while let Some(ch) = chars.next() {
@@ -61,59 +59,60 @@ impl CustomSplit for String {
                         open_backtick = !open_backtick;
                         // arg.push(ch);
                     }
-                    '\\' if !open_backslash && !open_double_quote => {
+
+                    '\\' if !open_backslash && !open_double_quote && !open_single_quote => {
                         open_backslash = true;
+                        last_index = i;
                         match chars.peek() {
                             Some(&ch2) => {
                                 open_backslash = false;
-                                // arg.push(ch);
-                                arg.push(ch2);
+                                result.push(ch2);
                                 chars.next();
                             }
-                            None => {
-                                // arg.push(ch);
-                            }
+                            None => {}
                         }
                     }
+                    '\\' if open_double_quote && !open_single_quote => match chars.peek() {
+                        Some(&ch2) => {
+                            if special.contains(&ch2) {
+                                result.push(ch2);
+                            } else {
+                                result.push(ch);
+                                result.push(ch2);
+                            }
+                            chars.next();
+                        }
+                        None => {}
+                    },
                     ch if ch.is_whitespace()
                         && !open_double_quote
                         && !open_single_quote
                         && !open_backtick
                         && !open_backslash =>
                     {
-                        if !arg.is_empty() {
-                            result.push(arg.clone());
-                            result.push(" ".to_string());
-                            arg.clear();
-                        }
-                    }
-                    _ => {
-                        if open_backslash {
-                            println!("ch => {ch}");
-                            open_backslash = !open_backslash;
-                            let le: usize = result.len();
-                            if le > 0 {
-                                println!("sd");
-                                result[le - 1].push(ch);
-                            } else {
-                                arg.push(ch);
+                        let le = result.len();
+                        if le > 0 {
+                            if &result[le - 1..] != " " {
+                                result.push(' ');
                             }
+                        }
+
+                        // result.push(' ');
+                    }
+                    _ if !open_single_quote => {
+                        if ch == '\\' {
+                            open_backslash = true;
                         } else {
-                            arg.push(ch);
+                            open_backslash = false;
+                            result.push(ch);
                         }
                     }
+                    _ => result.push(ch),
                 }
-            }
-
-            // println!("arg =>{arg:?}");
-
-            if !arg.is_empty() {
-                result.push(arg.clone());
-                arg.clear();
             }
         }
 
-        // println!("result => {:?}", result);
+        // println!("result => {:#?}", result);
 
         let open = open_double_quote || open_single_quote || open_backslash || open_backtick;
 
@@ -123,72 +122,3 @@ impl CustomSplit for String {
 pub fn print_error(message: &str) {
     eprintln!("\x1b[31m {}\x1b[0m", message)
 }
-
-// pub trait CostumSplit {
-//     fn costum_split(&self) -> (Vec<String>, bool);
-// }
-
-// impl CostumSplit for String {
-//     fn costum_split(&self) -> (Vec<String>, bool) {
-//         let mut result: Vec<&str> = Vec::new();
-//         let mut arg: String = String::new();
-//         let mut open_double_quote = false;
-//         let mut open_single_quote = false;
-//         let mut open_backslash_quote = false;
-//         let mut open_backtick_quote = false;
-
-//         let special = ['"', '\'', '\\', '`'];
-
-//         let new_vec = self.split("\n").collect::<Vec<_>>();
-
-//         for next_str in new_vec {
-//             let mut chars = next_str.chars().peekable();
-//             while let Some(ch) = chars.next() {
-//                 match ch {
-//                     '"' => open_double_quote = !open_double_quote,
-//                     '\'' => open_single_quote = !open_single_quote,
-//                     '`' => open_backtick_quote = !open_backtick_quote,
-//                     '\\' => {
-//                         if !open_backslash_quote {
-//                             open_backslash_quote = true;
-//                             match chars.peek() {
-//                                 Some(ch2) => {
-//                                     open_backslash_quote = false;
-//                                     arg.push(*ch2);
-//                                     chars.next();
-//                                 }
-//                                 _ => {}
-//                             }
-//                         }
-//                     }
-
-//                     _ => {
-//                         if ch.is_whitespace() {
-//                             result.push(&arg);
-//                             arg = String::new();
-//                         } else {
-//                             arg.push(ch);
-//                         }
-//                     }
-//                 }
-//             }
-
-//             if !arg.is_empty() {
-//                 result.push(&arg);
-//             }
-//         }
-
-//         println!("{:?}", result);
-
-//         let open =
-//             open_double_quote || open_single_quote || open_backslash_quote || open_backtick_quote;
-
-//         let mut res: Vec<String> = vec![];
-
-//         for a in result {
-//             res.push(a.to_string());
-//         }
-
-//         (res, open)
-//     }
-// }
