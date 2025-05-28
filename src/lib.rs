@@ -31,9 +31,7 @@ impl CustomSplit for String {
         let mut open_backslash = false;
         let mut open_backtick = false;
         let special = ['"', '\'', '\\', '`'];
-
         let new_vec: Vec<&str> = self.split('\n').collect();
-        let mut last_index = 0;
 
         for (i, next_str) in new_vec.iter().enumerate() {
             if open_double_quote {
@@ -49,20 +47,16 @@ impl CustomSplit for String {
                 match ch {
                     '"' if !open_single_quote && !open_backtick => {
                         open_double_quote = !open_double_quote;
-                        // arg.push(ch);
                     }
                     '\'' if !open_double_quote && !open_backtick => {
                         open_single_quote = !open_single_quote;
-                        // arg.push(ch);
                     }
                     '`' if !open_double_quote && !open_single_quote => {
                         open_backtick = !open_backtick;
-                        // arg.push(ch);
                     }
 
                     '\\' if !open_backslash && !open_double_quote && !open_single_quote => {
                         open_backslash = true;
-                        last_index = i;
                         match chars.peek() {
                             Some(&ch2) => {
                                 open_backslash = false;
@@ -96,8 +90,6 @@ impl CustomSplit for String {
                                 result.push(' ');
                             }
                         }
-
-                        // result.push(' ');
                     }
                     _ if !open_single_quote => {
                         if ch == '\\' {
