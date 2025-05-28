@@ -67,120 +67,113 @@ fn main() {
             hist.push(entry.clone());
         }
 
-        let mut first_pass_res:Vec<String> = Vec::new();
+        let mut first_pass_res: Vec<String> = Vec::new();
 
         /* first pass */
         for arg in command {
-            for sub_arg in arg{
-                let mut final_arg = String::new();
-                let last_value = sub_arg.pop();
-                if sub_arg[sub_arg.len()]== "command"{
+            let mut final_arg = String::new();
+            for sub_arg in arg {
+                let sub_arg_output = String::new();
+                let last_value = sub_arg.pop().unwrap_or("".to_string());
 
-                }else {
-                    final_arg = sub_arg.join("");
+                if last_value == "command" {
+                    let command = sub_arg[0].as_str();
+                    let args: Vec<String> = if sub_arg.len() > 1 {
+                        sub_arg[1..].to_vec()
+                    } else {
+                        Vec::new()
+                    };
+
+                    let output = match command {
+                        "echo" => echo(&args, &entry),
+                        "pwd" => pwd(&current_dir),
+                        // "cd" => {
+                        //     cd(&args, &mut current_dir, &mut history_current_dir, &home);
+                        // }
+                        // "ls" => {
+                        //     ls(&args, &current_dir);
+                        // }
+                        // "cat" => {
+                        //     cat(&args, &current_dir);
+                        // }
+                        // "cp" => {
+                        //     cp(&args);
+                        // }
+                        // "rm" => {
+                        //     rm(&args, &current_dir);
+                        // }
+                        // "mv" => {
+                        //     mv(&args);
+                        // }
+                        // "mkdir" => {
+                        //     mkdir(&args, &current_dir);
+                        // }
+                        // "history" => {
+                        //     history(&hist);
+                        // }
+                        // "exit" => exit(0),
+                        _ => format!("\x1b[31m Command '<{command}>' not found\x1b[0m"),
+                    };
+                } else {
+                    final_arg += &sub_arg.join("");
                 }
-                first_pass_res.push(final_arg);
-                
             }
+            first_pass_res.push(final_arg);
 
             let input = &commands[i];
 
             if input.is_empty() {
                 continue;
             }
-            if 
-            let command = input[0].as_str();
-            let args: Vec<String> = if input.len() > 1 {
-                input[1..].to_vec()
-            } else {
-                Vec::new()
-            };
 
-            
-            let output = match command {
-                "echo" =>echo(&args, &entry),
-                "pwd" =>pwd(&current_dir),
-                // "cd" => {
-                //     cd(&args, &mut current_dir, &mut history_current_dir, &home);
-                // }
-                // "ls" => {
-                //     ls(&args, &current_dir);
-                // }
-                // "cat" => {
-                //     cat(&args, &current_dir);
-                // }
-                // "cp" => {
-                //     cp(&args);
-                // }
-                // "rm" => {
-                //     rm(&args, &current_dir);
-                // }
-                // "mv" => {
-                //     mv(&args);
-                // }
-                // "mkdir" => {
-                //     mkdir(&args, &current_dir);
-                // }
-                // "history" => {
-                //     history(&hist);
-                // }
-                // "exit" => exit(0),
-                _ => format!("\x1b[31m Command '<{command}>' not found\x1b[0m")
-            };
-
-                first_pass_res.push(output);
-            
+            first_pass_res.push(output);
         }
 
         /* second pass */
-            let input = first_pass_res;
+        let input = first_pass_res;
 
-            if input.is_empty() {
-                continue;
-            }
+        if input.is_empty() {
+            continue;
+        }
 
-            let command = input[0].as_str();
-            let args: Vec<String> = if input.len() > 1 {
-                input[1..].to_vec()
-            } else {
-                Vec::new()
-            };
+        let command = input[0].as_str();
+        let args: Vec<String> = if input.len() > 1 {
+            input[1..].to_vec()
+        } else {
+            Vec::new()
+        };
 
-            
+        let output = match command {
+            "echo" => echo(&args, &entry),
+            "pwd" => pwd(&current_dir),
+            // "cd" => {
+            //     cd(&args, &mut current_dir, &mut history_current_dir, &home);
+            // }
+            // "ls" => {
+            //     ls(&args, &current_dir);
+            // }
+            // "cat" => {
+            //     cat(&args, &current_dir);
+            // }
+            // "cp" => {
+            //     cp(&args);
+            // }
+            // "rm" => {
+            //     rm(&args, &current_dir);
+            // }
+            // "mv" => {
+            //     mv(&args);
+            // }
+            // "mkdir" => {
+            //     mkdir(&args, &current_dir);
+            // }
+            // "history" => {
+            //     history(&hist);
+            // }
+            // "exit" => exit(0),
+            _ => format!("\x1b[31m Command '<{command}>' not found\x1b[0m"),
+        };
 
-            let output = match command {
-                "echo" =>echo(&args, &entry),
-                "pwd" =>pwd(&current_dir),
-                // "cd" => {
-                //     cd(&args, &mut current_dir, &mut history_current_dir, &home);
-                // }
-                // "ls" => {
-                //     ls(&args, &current_dir);
-                // }
-                // "cat" => {
-                //     cat(&args, &current_dir);
-                // }
-                // "cp" => {
-                //     cp(&args);
-                // }
-                // "rm" => {
-                //     rm(&args, &current_dir);
-                // }
-                // "mv" => {
-                //     mv(&args);
-                // }
-                // "mkdir" => {
-                //     mkdir(&args, &current_dir);
-                // }
-                // "history" => {
-                //     history(&hist);
-                // }
-                // "exit" => exit(0),
-                _ => format!("\x1b[31m Command '<{command}>' not found\x1b[0m")
-            };
-
-            println!("{output}");
-
-        
+        println!("{output}");
     }
 }
