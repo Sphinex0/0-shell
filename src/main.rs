@@ -27,13 +27,13 @@ fn main() {
         std::io::stdout().flush().unwrap();
         let mut entry = String::new();
         let size = stdin().read_line(&mut entry).unwrap();
-        entry.pop();
+        // entry.pop();
         if size == 0 {
             println!();
             exit(0)
         }
 
-        let (mut input, mut open_quote) = entry.costum_split();
+        let (mut input, mut open_quote) = entry.custom_split();
 
         if open_quote {
             loop {
@@ -41,13 +41,13 @@ fn main() {
                 let mut input_tmp = String::new();
                 std::io::stdout().flush().unwrap();
                 let size = stdin().read_line(&mut input_tmp).unwrap();
-                input_tmp.pop();
+                // input_tmp.pop();
                 if size == 0 {
                     println!();
                     break;
                 }
                 entry.push_str(&input_tmp);
-                let (input_tmp, open_quote2) = entry.costum_split();
+                let (input_tmp, open_quote2) = entry.custom_split();
                 open_quote = open_quote2;
                 input = input_tmp;
                 if !open_quote {
