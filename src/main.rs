@@ -6,8 +6,8 @@ use std::process::exit;
 use shell::*;
 
 fn main() {
-    let mut current_dir = current_dir().unwrap();
-    let mut history_current_dir = current_dir.clone();
+    let current_dir = current_dir().unwrap();
+    let history_current_dir = current_dir.clone();
     let mut hist: Vec<String> = Vec::new();
     let home = match home_dir() {
         Some(p) => p,
@@ -18,7 +18,6 @@ fn main() {
     };
 
     loop {
-        let mut command: Vec<Vec<Vec<String>>> = Vec::new();
         let address = match current_dir.strip_prefix(&home) {
             Ok(p) => "\x1b[1;31m~\x1b[1;32m/".to_string() + &p.display().to_string(),
             Err(_) => current_dir.display().to_string(),
@@ -35,7 +34,7 @@ fn main() {
             exit(0)
         }
 
-        let mut open_quote = entry.costum_split(&mut command);
+        let (command, open_quote) = entry.costum_split();
 
         // if open_quote {
         //     loop {
@@ -70,68 +69,71 @@ fn main() {
         let mut first_pass_res: Vec<String> = Vec::new();
 
         /* first pass */
-        for arg in command {
-            let mut final_arg = String::new();
-            for sub_arg in arg {
-                let sub_arg_output = String::new();
-                let last_value = sub_arg.pop().unwrap_or("".to_string());
+        // let temp = command.args
 
-                if last_value == "command" {
-                    let command = sub_arg[0].as_str();
-                    let args: Vec<String> = if sub_arg.len() > 1 {
-                        sub_arg[1..].to_vec()
-                    } else {
-                        Vec::new()
-                    };
+        if !command.name.is_empty() {
+            first_pass_res.push(command.name);
+        }
+        for arg in command.args {
+            match arg {
+                CommandPart::String(arg) => {
+                    if !arg.is_empty() {
+                        first_pass_res.push(arg)
+                    }
+                }
+                CommandPart::Substitution(sub_command) => {
+                    let mut sub_args: Vec<String> = Vec::new();
+                    for sub_arg in sub_command.args {
+                        if let CommandPart::String(sub_arg_str) = sub_arg {
+                            sub_args.push(sub_arg_str);
+                        }
+                    }
 
-                    let output = match command {
-                        "echo" => echo(&args, &entry),
+                    if sub_command.name.is_empty() {
+                        continue;
+                    }
+                    let output = match sub_command.name.as_str() {
+                        "echo" => echo(&sub_args, &entry),
                         "pwd" => pwd(&current_dir),
                         // "cd" => {
-                        //     cd(&args, &mut current_dir, &mut history_current_dir, &home);
+                        //     cd(&sub_args, &mut current_dir, &mut history_current_dir, &home);
                         // }
                         // "ls" => {
-                        //     ls(&args, &current_dir);
+                        //     ls(&sub_args, &current_dir);
                         // }
                         // "cat" => {
-                        //     cat(&args, &current_dir);
+                        //     cat(&sub_args, &current_dir);
                         // }
                         // "cp" => {
-                        //     cp(&args);
+                        //     cp(&sub_args);
                         // }
                         // "rm" => {
-                        //     rm(&args, &current_dir);
+                        //     rm(&sub_args, &current_dir);
                         // }
                         // "mv" => {
-                        //     mv(&args);
+                        //     mv(&sub_args);
                         // }
                         // "mkdir" => {
-                        //     mkdir(&args, &current_dir);
+                        //     mkdir(&sub_args, &current_dir);
                         // }
                         // "history" => {
                         //     history(&hist);
                         // }
                         // "exit" => exit(0),
-                        _ => format!("\x1b[31m Command '<{command}>' not found\x1b[0m"),
+                        _ => {
+                            println!("\x1b[31mCommand '<{}>' not found\x1b[0m", sub_command.name);
+                            "".to_string()
+                        }
                     };
-                } else {
-                    final_arg += &sub_arg.join("");
+
+                    first_pass_res.push(output)
                 }
             }
-            first_pass_res.push(final_arg);
-
-            let input = &commands[i];
-
-            if input.is_empty() {
-                continue;
-            }
-
-            first_pass_res.push(output);
         }
 
         /* second pass */
+        // println!("{:?}", first_pass_res);
         let input = first_pass_res;
-
         if input.is_empty() {
             continue;
         }
@@ -170,10 +172,17 @@ fn main() {
             // "history" => {
             //     history(&hist);
             // }
-            // "exit" => exit(0),
-            _ => format!("\x1b[31m Command '<{command}>' not found\x1b[0m"),
+            "exit" => {
+                exit(0);
+                "".to_string()
+            }
+            _ => {
+                println!("\x1b[31mCommand '<{command}>' not found\x1b[0m");
+                "".to_string()
+            }
         };
-
-        println!("{output}");
+        if !output.is_empty() {
+            println!("{output}");
+        }
     }
 }

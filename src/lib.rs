@@ -19,15 +19,45 @@ pub use mv::*;
 pub use pwd::*;
 pub use rm::*;
 
+#[derive(Debug, PartialEq)]
+pub enum CommandPart {
+    String(String),        // A literal string, e.g., "hello"
+    Substitution(Command), // A nested command, e.g., `echo d`
+}
+
+#[derive(Debug, PartialEq)]
+pub struct Command {
+    pub name: String,           // The command name, e.g., "echo"
+    pub args: Vec<CommandPart>, // List of arguments (strings or substitutions)
+}
+
+impl Command {
+    pub fn add_string(&mut self, word: &String) {
+        if word.len() == 0 {
+            return;
+        }
+        if self.name.is_empty() {
+            self.name = word.clone()
+        } else {
+            self.args.push(CommandPart::String(word.clone()));
+        }
+    }
+}
+
 pub trait CostumSplit {
-    fn costum_split(&self, commands: &mut Vec<Vec<String>>) -> bool;
+    fn costum_split(&self) -> (Command, bool);
 }
 
 impl CostumSplit for String {
-    fn costum_split(&self, commands: &mut Vec<Vec<String>>) -> bool {
-        let mut result: Vec<String> = Vec::new();
-        let mut arg: String = String::new();
-        commands.push(Vec::new());
+    fn costum_split(&self) -> (Command, bool) {
+        let mut command = Command {
+            name: String::new(),
+            args: Vec::new(),
+        };
+        let mut word = String::new();
+        let mut main_command = false;
+
+        // commands.push(Vec::new());
 
         let mut backtick_result: Vec<String> = Vec::new();
         let mut backtick_arg: String = String::new();
@@ -46,72 +76,76 @@ impl CostumSplit for String {
                 '\'' => open_single_quote = !open_single_quote,
                 '`' => {
                     open_backtick_quote = !open_backtick_quote;
-                    if !open_backtick_quote {
-                        if !backtick_arg.is_empty() {
-                            backtick_result.push(backtick_arg.clone());
-                            backtick_arg = String::new();
-                        }
-                        commands.push(backtick_result.clone());
-                        backtick_result = Vec::new();
+
+                    if open_backtick_quote {
+                        command.args.push(CommandPart::Substitution(Command {
+                            name: String::new(),
+                            args: Vec::new(),
+                        }));
+                    } else {
+                        let last_index = command.args.len() - 1;
+
+                        if let CommandPart::Substitution(sub_command) =
+                            &mut command.args[last_index]
+                        {
+                            sub_command.add_string(&word);
+                        };
+                        word.clear();
                     }
                 }
                 '\\' => {
-                    if !open_backslash_quote {
-                        open_backslash_quote = true;
-                        match chars.peek() {
-                            Some(ch2) => {
-                                open_backslash_quote = false;
-                                arg.push(*ch2);
-                                chars.next();
-                            }
-                            _ => {}
-                        }
-                    }
+                    // if !open_backslash_quote {
+                    //     open_backslash_quote = true;
+                    //     match chars.peek() {
+                    //         Some(ch2) => {
+                    //             open_backslash_quote = false;
+                    //             arg.push(*ch2);
+                    //             chars.next();
+                    //         }
+                    //         _ => {}
+                    //     }
+                    // }
                 }
 
                 _ => {
-                    if open_backtick_quote {
-                        if ch.is_whitespace()
-                            && !(open_double_quote
-                                || open_single_quote
-                                || open_backslash_quote)
-                        {
-                            backtick_result.push(backtick_arg);
-                            backtick_arg = String::new();
+                    if ch.is_whitespace()
+                        && !(open_double_quote || open_single_quote || open_backslash_quote)
+                    {
+                        if open_backtick_quote {
+                            let last_index = command.args.len() - 1;
+                            if let CommandPart::Substitution(sub_command) =
+                                &mut command.args[last_index]
+                            {
+                                sub_command.add_string(&word);
+                            };
                         } else {
+                            command.add_string(&word);
 
-                            backtick_arg.push(ch);
+                            let le = command.args.len();
+                            if le > 0
+                                && command.args[le - 1] != CommandPart::String(" ".to_string())
+                            {
+                                command.args.push(CommandPart::String(" ".to_string()));
+                            }
                         }
+
+                        word.clear();
                     } else {
-                        if ch.is_whitespace()
-                            && !(open_double_quote
-                                || open_single_quote
-                                || open_backslash_quote
-                                || open_backtick_quote)
-                        {
-                            result.push(arg);
-                            arg = String::new();
-                        } else {
-                            arg.push(ch);
-                        }
+                        word.push(ch);
                     }
                 }
             }
         }
 
-        if !arg.is_empty() {
-            result.push(arg);
-        }
+        /* flush anything left */
+        command.add_string(&word);
 
         // println!("{:?}", result);
 
         let open =
             open_double_quote || open_single_quote || open_backslash_quote || open_backtick_quote;
-
-        commands[0] = result;
-        
-        println!("{commands:#?}");
-        open
+        // println!("command : {command:#?}");
+        (command, open)
     }
 }
 

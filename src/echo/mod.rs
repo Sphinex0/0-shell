@@ -1,6 +1,6 @@
 pub fn echo(args: &[String], _entry: &String)->String {
     // println!("{}", args.join(""));
-    args.join(" ")
+    args.join("")
     // parse_entry(entry);
 }
 
