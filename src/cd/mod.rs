@@ -4,16 +4,16 @@ use crate::print_error;
 
 pub fn cd(tab: &[String], current_dir: &mut PathBuf, history: &mut PathBuf, home: &PathBuf) {
     let tab = tab.join(" ");
-    let mut res = Vec::new();
-    for a in tab.chars() {
-        res.push(a.to_string());
-    }
-    let tab = res;
+    // let mut res = Vec::new();
+    // for a in tab.chars() {
+    //     res.push(a.to_string());
+    // }
+    // let tab = res;
     if tab.len() == 0 {
         history.push(&current_dir);
         current_dir.push(home);
     } else {
-        let path = tab[0].as_str();
+        let path = tab.as_str();
         if path != "-" {
             history.push(&current_dir);
         }

@@ -33,25 +33,25 @@ impl CustomSplit for String {
         let special = ['"', '\'', '\\', '`'];
         let new_vec: Vec<&str> = self.split('\n').collect();
 
-        for (i, next_str) in new_vec.iter().enumerate() {
-            if open_double_quote {
+        for (i, line) in new_vec.iter().enumerate() {
+            if open_double_quote || open_single_quote {
                 result.push('\n');
             }
-            if next_str.is_empty() {
+            if line.is_empty() {
                 if open_backslash && i != new_vec.len() - 1 {
                     open_backslash = false;
                 }
             }
-            let mut chars = next_str.chars().peekable();
+            let mut chars = line.chars().peekable();
             while let Some(ch) = chars.next() {
                 match ch {
-                    '"' if !open_single_quote && !open_backtick => {
+                    '"' if !open_single_quote => {
                         open_double_quote = !open_double_quote;
                     }
-                    '\'' if !open_double_quote && !open_backtick => {
+                    '\'' if !open_double_quote => {
                         open_single_quote = !open_single_quote;
                     }
-                    '`' if !open_double_quote && !open_single_quote => {
+                    '`' if !open_single_quote => {
                         open_backtick = !open_backtick;
                     }
 
@@ -81,7 +81,6 @@ impl CustomSplit for String {
                     ch if ch.is_whitespace()
                         && !open_double_quote
                         && !open_single_quote
-                        && !open_backtick
                         && !open_backslash =>
                     {
                         let le = result.len();
