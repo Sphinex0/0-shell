@@ -28,34 +28,36 @@ fn main() {
         std::io::stdout().flush().unwrap();
         let mut entry = String::new();
         let size = stdin().read_line(&mut entry).unwrap();
-        entry.pop();
+        // entry.pop();
         if size == 0 {
             println!();
             exit(0)
         }
 
-        let (command, open_quote) = entry.costum_split();
+        let (mut command, mut open_quote) = entry.custom_split();
 
-        // if open_quote {
-        //     loop {
-        //         print!("\x1b[33m> \x1b[0m");
-        //         let mut input_tmp = String::new();
-        //         std::io::stdout().flush().unwrap();
-        //         let size = stdin().read_line(&mut input_tmp).unwrap();
-        //         input_tmp.pop();
-        //         if size == 0 {
-        //             println!();
-        //             break;
-        //         }
-        //         entry.push_str(&input_tmp);
-        //         let (input_tmp, open_quote2) = entry.costum_split();
-        //         open_quote = open_quote2;
-        //         input = input_tmp;
-        //         if !open_quote {
-        //             break;
-        //         }
-        //     }
-        // }
+        if open_quote {
+            loop {
+                print!("\x1b[33m> \x1b[0m"); // >
+                let mut input_tmp = String::new();
+                std::io::stdout().flush().unwrap();
+                let size = stdin().read_line(&mut input_tmp).unwrap();
+                // input_tmp.pop();
+                if size == 0 {
+                    println!();
+                    break;
+                }
+                entry.push_str(&input_tmp);
+                let (input_tmp, open_quote2) = entry.custom_split();
+                open_quote = open_quote2;
+                command = input_tmp;
+                if !open_quote {
+                    break;
+                }
+            }
+        }
+
+        // println!("command =>{command:?}");
 
         if open_quote {
             print_error("Syntax error: Unterminated quoted string");
@@ -116,9 +118,7 @@ fn main() {
                             mkdir(&sub_args, &current_dir);
                             "".to_string()
                         }
-                        // "history" => {
-                        //     history(&hist);
-                        // }
+                        "history" => history(&hist),
                         "exit" => exit(0),
                         _ => {
                             println!("\x1b[31mCommand '<{}>' not found\x1b[0m", sub_command.name);
@@ -134,7 +134,7 @@ fn main() {
         /* second pass */
         // println!("{:?}", first_pass_res);
         let input = first_pass_res;
-        if input.is_empty() || input[0].is_empty(){
+        if input.is_empty() || input[0].is_empty() {
             continue;
         }
 
@@ -169,9 +169,7 @@ fn main() {
                 mkdir(&args, &current_dir);
                 "".to_string()
             }
-            // "history" => {
-            //     history(&hist);
-            // }
+            "history" => history(&hist),
             "exit" => {
                 exit(0);
             }
@@ -180,8 +178,8 @@ fn main() {
                 "".to_string()
             }
         };
-        if !output.is_empty() {
-            println!("{output}");
-        }
+        // if !output.is_empty() {
+        println!("{output}");
+        // }
     }
 }
