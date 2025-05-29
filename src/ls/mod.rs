@@ -3,9 +3,20 @@ use std::os::unix::fs::FileTypeExt;
 use std::os::unix::fs::MetadataExt;
 use std::os::unix::fs::PermissionsExt;
 use std::path::*;
+use chrono::{DateTime, Local};
 use std::fs::Metadata;
 use std::{fs, io};
 use users::*;
+use terminal_size::{terminal_size, Width};
+
+fn get_terminal_width() -> usize {
+    if let Some((Width(w), _)) = terminal_size() {
+        w as usize
+    } else {
+        80 
+    }
+}
+
 
 pub fn ls(tab: &[String], current_dir: &PathBuf) {
     let mut target_dir_str = current_dir.clone();
@@ -61,6 +72,7 @@ pub fn ls(tab: &[String], current_dir: &PathBuf) {
 
 // Classic ls && -a flag
 fn myls(entries: ReadDir, dr: bool) {
+    let mut max_user = 0;
     for entry in entries {
         match entry {
             Ok(entry) => {
@@ -125,55 +137,79 @@ fn is_executable(path: &Path) -> bool {
 // ls -l
 fn ls_l(entries: ReadDir) {
     let mut total_blocks = 0;
-    for entry in entries {
-        match entry {
-            Ok(entry) => {
-                let metadata = entry.metadata().expect("Could not read entry");
-                let permissions = metadata.permissions();
-                let file_type = metadata.file_type();
-                let type_char = if file_type.is_dir() {
-                    'd'
-                } else if file_type.is_symlink() {
-                    'l'
-                } else if file_type.is_socket() {
-                    's'
-                } else if file_type.is_fifo() {
-                    'p'
-                } else if file_type.is_char_device() {
-                    'c'
-                } else if file_type.is_block_device() {
-                    'b'
-                } else if file_type.is_file() {
-                    '-'
-                } else {
-                    '?'
-                };
-                let permissions = format_permissions(&permissions);
-                let hardlink = metadata.nlink();
-                let user = get_usr(&metadata).unwrap();
-                let grp = get_grp(&metadata).unwrap();
-                // file size
-                let file_size = metadata.size();
-                // Last modification date and time
-                let last_mdf_time = metadata.modified().unwrap();
-                if &entry.file_name().to_str().unwrap()[0..1] != "." {
-                    total_blocks += metadata.blocks();
-                    println!(
-                        "{type_char}{} {hardlink} {} {} {file_size} {:?} {}",
-                        permissions,
-                        user.name().to_str().unwrap(),
-                        grp.name().to_str().unwrap(),
-                        last_mdf_time,
-                        entry.file_name().to_string_lossy()
-                    );
-                }
-            }
-            Err(e) => {
-                eprintln!("Warning: Could not read directory entry: {}", e)
-            }
+    let mut items = vec![];
+
+    // First pass: gather entries and max widths
+    let mut max_user = 0;
+    let mut max_group = 0;
+    let mut max_size = 0;
+
+    for entry in entries.flatten() {
+        let metadata = entry.metadata().unwrap();
+        if &entry.file_name().to_str().unwrap()[0..1] == "." {
+            continue;
         }
+
+        let user = get_usr(&metadata).unwrap();
+        let grp = get_grp(&metadata).unwrap();
+
+        let user_str = user.name().to_str().unwrap().to_string();
+        let grp_str = grp.name().to_str().unwrap().to_string();
+        let file_size = metadata.size();
+        let blocks = metadata.blocks();
+
+        max_user = max_user.max(user_str.len());
+        max_group = max_group.max(grp_str.len());
+        max_size = max_size.max(file_size.to_string().len());
+
+        items.push((entry, metadata, user_str, grp_str));
+        total_blocks += blocks;
     }
+
     println!("total {}", total_blocks / 2);
+
+    // Second pass: print
+    for (entry, metadata, user, grp) in items {
+        let permissions = metadata.permissions();
+        let file_type = metadata.file_type();
+        let type_char = if file_type.is_dir() {
+            'd'
+        } else if file_type.is_symlink() {
+            'l'
+        } else if file_type.is_socket() {
+            's'
+        } else if file_type.is_fifo() {
+            'p'
+        } else if file_type.is_char_device() {
+            'c'
+        } else if file_type.is_block_device() {
+            'b'
+        } else if file_type.is_file() {
+            '-'
+        } else {
+            '?'
+        };
+
+        let perms = format_permissions(&permissions);
+        let hardlink = metadata.nlink();
+        let file_size = metadata.size();
+        let last_mdf_time = metadata.modified().unwrap();
+        let datetime: DateTime<Local> = last_mdf_time.into();
+        let formatted_time = datetime.format("%b %e %H:%M").to_string();
+
+        println!(
+            "{type_char}{perms} {hardlink:2} {:<width_user$} {:<width_grp$} {:<width_size$} {} {}",
+            user,
+            grp,
+            file_size,
+            formatted_time,
+            entry.file_name().to_string_lossy(),
+            width_user = max_user,
+            width_grp = max_group,
+            width_size = max_size
+        );
+    }
+
     println!();
 }
 
