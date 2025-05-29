@@ -71,8 +71,14 @@ fn main() {
 
         let res: Vec<&str> = input.split(" ").collect();
         let mut input: Vec<String> = vec![];
-        for a in res {
-            input.push(a.to_string());
+        for (i, a) in res.iter().enumerate() {
+            if i as i32 != res.len() as i32 - 1 {
+                input.push(a.to_string());
+            } else {
+                if *a != "" {
+                    input.push(a.to_string());
+                }
+            }
         }
 
         // let command = input[0].as_str();
@@ -88,6 +94,8 @@ fn main() {
         } else {
             Vec::new()
         };
+
+        // println!("{args:?}");
         match command {
             "echo" => {
                 echo(&args, &entry);
@@ -127,4 +135,3 @@ fn main() {
         }
     }
 }
-
