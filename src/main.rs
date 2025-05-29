@@ -101,25 +101,25 @@ fn main() {
                         // "ls" => {
                         //     ls(&sub_args, &current_dir);
                         // }
-                        // "cat" => {
-                        //     cat(&sub_args, &current_dir);
-                        // }
+                        "cat" => cat(&sub_args, &current_dir),
                         // "cp" => {
                         //     cp(&sub_args);
                         // }
-                        // "rm" => {
-                        //     rm(&sub_args, &current_dir);
-                        // }
+                        "rm" => {
+                            rm(&sub_args, &current_dir);
+                            "".to_string()
+                        }
                         // "mv" => {
                         //     mv(&sub_args);
                         // }
-                        // "mkdir" => {
-                        //     mkdir(&sub_args, &current_dir);
-                        // }
+                        "mkdir" => {
+                            mkdir(&sub_args, &current_dir);
+                            "".to_string()
+                        }
                         // "history" => {
                         //     history(&hist);
                         // }
-                        // "exit" => exit(0),
+                        "exit" => exit(0),
                         _ => {
                             println!("\x1b[31mCommand '<{}>' not found\x1b[0m", sub_command.name);
                             "".to_string()
@@ -134,7 +134,7 @@ fn main() {
         /* second pass */
         // println!("{:?}", first_pass_res);
         let input = first_pass_res;
-        if input.is_empty() {
+        if input.is_empty() || input[0].is_empty(){
             continue;
         }
 
@@ -154,27 +154,26 @@ fn main() {
             // "ls" => {
             //     ls(&args, &current_dir);
             // }
-            // "cat" => {
-            //     cat(&args, &current_dir);
-            // }
+            "cat" => cat(&args, &current_dir),
             // "cp" => {
             //     cp(&args);
             // }
-            // "rm" => {
-            //     rm(&args, &current_dir);
-            // }
+            "rm" => {
+                rm(&args, &current_dir);
+                "".to_string()
+            }
             // "mv" => {
             //     mv(&args);
             // }
-            // "mkdir" => {
-            //     mkdir(&args, &current_dir);
-            // }
+            "mkdir" => {
+                mkdir(&args, &current_dir);
+                "".to_string()
+            }
             // "history" => {
             //     history(&hist);
             // }
             "exit" => {
                 exit(0);
-                "".to_string()
             }
             _ => {
                 println!("\x1b[31mCommand '<{command}>' not found\x1b[0m");

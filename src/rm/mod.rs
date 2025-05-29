@@ -28,6 +28,7 @@ pub fn rm(args: &[String], current_dir: &PathBuf) {
                     }
                 }
                 Err(_err) => {
+                    println!("{tmp:?}");
                     if let Err(err) = fs::remove_file(tmp) {
                         print_error(&format!("{arg}: {err}"));
                     }
