@@ -145,41 +145,29 @@ fn main() {
             Vec::new()
         };
 
-        let output = match command {
-            "echo" => echo(&args, &entry),
-            "pwd" => pwd(&current_dir),
+        match command {
+            "echo" => println!("{}", echo(&args, &entry)),
+            "pwd" => println!("{}", pwd(&current_dir)),
             // "cd" => {
             //     cd(&args, &mut current_dir, &mut history_current_dir, &home);
             // }
             // "ls" => {
             //     ls(&args, &current_dir);
             // }
-            "cat" => cat(&args, &current_dir),
+            "cat" => println!("{}", cat(&args, &current_dir)),
             // "cp" => {
             //     cp(&args);
             // }
-            "rm" => {
-                rm(&args, &current_dir);
-                "".to_string()
-            }
+            "rm" => rm(&args, &current_dir),
+
             // "mv" => {
             //     mv(&args);
             // }
-            "mkdir" => {
-                mkdir(&args, &current_dir);
-                "".to_string()
-            }
-            "history" => history(&hist),
-            "exit" => {
-                exit(0);
-            }
-            _ => {
-                println!("\x1b[31mCommand '<{command}>' not found\x1b[0m");
-                "".to_string()
-            }
+            "mkdir" => mkdir(&args, &current_dir),
+
+            "history" => println!("{}", history(&hist)),
+            "exit" => exit(0),
+            _ => println!("\x1b[31mCommand '<{command}>' not found\x1b[0m"),
         };
-        // if !output.is_empty() {
-        println!("{output}");
-        // }
     }
 }
