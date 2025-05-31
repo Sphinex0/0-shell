@@ -44,13 +44,13 @@ impl Fileinfo {
 }
 
 #[derive(Debug)]
-struct ls {
+struct Ls {
     files: Vec<Fileinfo>,
     a_flag: bool,
     f_flag: bool,
     l_flag: bool,
 }
-impl ls {
+impl Ls {
     fn new() -> Self {
         Self {
             files: vec![],
@@ -115,7 +115,7 @@ impl ls {
             self.files.push(file);
         }
 
-        self.files.sort_by(|a, b| a.trimed_name.cmp(&b.trimed_name));
+        self.files.sort_by(|a, b| a.trimed_name.chars().next().cmp(&b.trimed_name.chars().next()));
 
         let mut res = Vec::new();
 
@@ -180,7 +180,7 @@ impl ls {
 }
 
 pub fn ls(tab: &[String], current_dir: &PathBuf) -> String {
-    let mut ls = ls::new();
+    let mut ls = Ls::new();
     let mut target_dir_str = current_dir.clone();
     for flag in tab {
         for (i, f) in flag.chars().enumerate() {
@@ -215,7 +215,7 @@ pub fn ls(tab: &[String], current_dir: &PathBuf) -> String {
 // helpers
 fn trime_dots(name: String) -> String {
     for (i, char) in name.chars().enumerate() {
-        if char == ' ' {
+        if char == '.' {
             continue;
         }
         return name[i..].to_string();
