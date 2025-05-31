@@ -1,4 +1,4 @@
-pub fn echo(args: &[String], _entry: &String)-> String {
+pub fn echo(args: &[String], _entry: &String) -> String {
     // println!("echo args:{args:?}");
     let entry = args.join("");
     let (res, newline) = parse_entry(&entry);
