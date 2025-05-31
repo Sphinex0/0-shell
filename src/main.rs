@@ -37,7 +37,7 @@ fn main() {
 
         if open_quote {
             loop {
-                print!("\x1b[33m> \x1b[0m");
+                print!("\x1b[33m> \x1b[0m"); // >
                 let mut input_tmp = String::new();
                 std::io::stdout().flush().unwrap();
                 let size = stdin().read_line(&mut input_tmp).unwrap();
@@ -94,6 +94,8 @@ fn main() {
         } else {
             Vec::new()
         };
+        
+        
 
         // println!("{args:?}");
         match command {
