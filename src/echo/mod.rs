@@ -1,4 +1,5 @@
-pub fn echo(args: &[String], _entry: &String)-> String {
+
+pub fn echo(args: &[String])-> String {
     // println!("echo args:{args:?}");
     let entry = args.join("");
     let (res, newline) = parse_entry(&entry);
@@ -8,6 +9,7 @@ pub fn echo(args: &[String], _entry: &String)-> String {
         format!("{}", res)
     }
 }
+
 
 fn parse_entry(entry: &str) -> (String, bool) {
     let mut result = String::new();
