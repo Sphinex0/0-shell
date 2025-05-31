@@ -18,3 +18,10 @@ handle spaces in names (using "")
 handle path deleting
 handle ctrl+c not crashing
 hadnle cat witout arguments
+
+
+
+tests:
+"`"echo h"`"
+"e"'c'"ho" he'l'"l"o
+echo `echo d`hello
