@@ -2,11 +2,11 @@ use std::env::*;
 use std::io::Write;
 use std::io::stdin;
 use std::process::exit;
-
 use shell::*;
 
 fn main() {
     let current_dir = current_dir().unwrap();
+    //let dotdot_entry = fs::DirEntry::from_path("..").unwrap();
     let history_current_dir = current_dir.clone();
     let mut hist: Vec<String> = Vec::new();
     let home = match home_dir() {
@@ -100,9 +100,7 @@ fn main() {
                         // "cd" => {
                         //     cd(&sub_args, &mut current_dir, &mut history_current_dir, &home);
                         // }
-                        // "ls" => {
-                        //     ls(&sub_args, &current_dir);
-                        // }
+                        "ls" => ls(&sub_args, &current_dir),
                         "cat" => cat(&sub_args, &current_dir),
                         // "cp" => {
                         //     cp(&sub_args);
@@ -151,9 +149,7 @@ fn main() {
             // "cd" => {
             //     cd(&args, &mut current_dir, &mut history_current_dir, &home);
             // }
-            // "ls" => {
-            //     ls(&args, &current_dir);
-            // }
+            "ls" => println!("{}", ls(&args, &current_dir)),
             "cat" => println!("{}", cat(&args, &current_dir)),
             // "cp" => {
             //     cp(&args);
