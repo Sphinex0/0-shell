@@ -1,24 +1,14 @@
+use chrono::{DateTime, Local};
+use std::fs::Metadata;
 use std::fs::{Permissions, ReadDir};
 use std::os::unix::fs::FileTypeExt;
 use std::os::unix::fs::MetadataExt;
 use std::os::unix::fs::PermissionsExt;
 use std::path::*;
-use chrono::{DateTime, Local};
-use std::fs::Metadata;
 use std::{fs, io};
 use users::*;
-use terminal_size::{terminal_size, Width};
 
-fn get_terminal_width() -> usize {
-    if let Some((Width(w), _)) = terminal_size() {
-        w as usize
-    } else {
-        80 
-    }
-}
-
-
-pub fn ls(tab: &[String], current_dir: &PathBuf) {
+pub fn ls(tab: &[String], current_dir: &PathBuf) -> String {
     let mut target_dir_str = current_dir.clone();
     let mut a_flag = false;
     let mut f_flag = false;
@@ -37,51 +27,59 @@ pub fn ls(tab: &[String], current_dir: &PathBuf) {
     }
     // read directory content
     let entries_result = fs::read_dir(&target_dir_str);
+    // let dotdot_metadata = fs::metadata(dotdot_entry);
+    // let dot_metadat = fs::metadata(current_dir);
 
     match entries_result {
         Ok(entries) => match (a_flag, f_flag, l_flag) {
-            (false, false, true) => ls_l(entries),
-            (false, true, false) => {
-                ls_f(entries);
-            }
-            (true, false, false) => {
-                print!(". ");
-                print!(".. ");
-                myls(entries, true);
-            }
-            _ => {
-                myls(entries, false);
-            }
+            (true, true, true) => return ls_alF(entries),
+            (false, false, true) => return ls_l(entries),
+            (false, true, false) => return ls_f(entries),
+            (true, false, false) => return myls(entries, true),
+            _ => myls(entries, false),
         },
         Err(e) => match e.kind() {
             io::ErrorKind::NotFound => {
-                eprintln!("Warning: Directory not found: {}", target_dir_str.display());
+                return format!("Warning: Directory not found: {}", target_dir_str.display());
             }
             io::ErrorKind::PermissionDenied => {
-                eprintln!(
+                format!(
                     "Warning: permission denied to read directory: {}",
                     target_dir_str.display()
-                );
+                )
             }
             _ => {
-                eprintln!("Error: Could not read directory: {}", e);
+                format!("Error: Could not read directory: {}", e)
             }
         },
     }
 }
-
+fn ls_alF(
+    entries: ReadDir,
+) -> String {
+    for entry in entries.flatten() {
+        let file_name = entry.file_name();
+        let file_name_str = file_name.to_string_lossy();
+        if file_name_str == "." || file_name_str == ".." {
+            println!("{}", file_name_str);
+        }
+    }
+    "".to_string()
+}
 // Classic ls && -a flag
-fn myls(entries: ReadDir, dr: bool) {
-    let mut max_user = 0;
+fn myls(entries: ReadDir, showall: bool) -> String {
+    let mut items = vec![];
+
     for entry in entries {
         match entry {
             Ok(entry) => {
                 let file_name_os = entry.file_name();
-                if &file_name_os.to_str().unwrap()[0..1] != "." && !dr {
-                    print!("{} ", file_name_os.to_str().unwrap());
-                    continue;
-                } else if dr {
-                    print!("{} ", file_name_os.to_str().unwrap());
+                let name = file_name_os.to_str().unwrap();
+
+                if !name.starts_with('.') && !showall {
+                    items.push(name.to_string());
+                } else if showall {
+                    items.push(name.to_string());
                 }
             }
             Err(e) => {
@@ -89,11 +87,19 @@ fn myls(entries: ReadDir, dr: bool) {
             }
         }
     }
-    println!();
+
+    items.sort();
+    if showall {
+        items.insert(0, "..".to_string());
+        items.insert(0, ".".to_string());
+    }
+
+    items.join(" ")
 }
 
 // -F flag //
-pub fn ls_f(entries: ReadDir) {
+pub fn ls_f(entries: ReadDir) -> String {
+    let mut items = vec![];
     for entry in entries {
         if let Ok(entry) = entry {
             let path = entry.path();
@@ -107,22 +113,24 @@ pub fn ls_f(entries: ReadDir) {
 
             if let Some(name) = entry.file_name().to_str() {
                 if file_type.is_dir() {
-                    print!("{}/ ", name);
+                    items.push(format!("{}/ ", name));
                 } else if file_type.is_symlink() {
-                    print!("{}@ ", name);
+                    items.push(format!("{}@ ", name));
                 } else if file_type.is_file() {
                     if !name.starts_with('.') {
                         if is_executable(&path) {
-                            print!("{}* ", name);
+                            items.push(format!("{}* ", name));
                         } else {
-                            print!("{} ", name);
+                            items.push(format!("{} ", name));
                         }
                     }
                 }
             }
         }
     }
-    println!();
+
+    items.sort_by(|a, b| a.cmp(b));
+    items.join(" ")
 }
 
 fn is_executable(path: &Path) -> bool {
@@ -135,7 +143,7 @@ fn is_executable(path: &Path) -> bool {
 }
 
 // ls -l
-fn ls_l(entries: ReadDir) {
+fn ls_l(entries: ReadDir) -> String {
     let mut total_blocks = 0;
     let mut items = vec![];
 
@@ -166,8 +174,14 @@ fn ls_l(entries: ReadDir) {
         total_blocks += blocks;
     }
 
-    println!("total {}", total_blocks / 2);
+    println!(" total {}", total_blocks / 2);
+    items.sort_by(|a, b| {
+        a.0.file_name()
+            .to_string_lossy()
+            .cmp(&b.0.file_name().to_string_lossy())
+    });
 
+    let mut res = vec![];
     // Second pass: print
     for (entry, metadata, user, grp) in items {
         let permissions = metadata.permissions();
@@ -197,8 +211,8 @@ fn ls_l(entries: ReadDir) {
         let datetime: DateTime<Local> = last_mdf_time.into();
         let formatted_time = datetime.format("%b %e %H:%M").to_string();
 
-        println!(
-            "{type_char}{perms} {hardlink:2} {:<width_user$} {:<width_grp$} {:<width_size$} {} {}",
+        res.push(format!(
+            "{type_char}{perms} {hardlink:2} {:<width_user$} {:<width_grp$} {:<width_size$} {} {}\n",
             user,
             grp,
             file_size,
@@ -207,10 +221,10 @@ fn ls_l(entries: ReadDir) {
             width_user = max_user,
             width_grp = max_group,
             width_size = max_size
-        );
+        ));
     }
 
-    println!();
+    " ".to_owned() + &res.join(" ")
 }
 
 fn get_usr(metadata: &Metadata) -> Option<User> {
