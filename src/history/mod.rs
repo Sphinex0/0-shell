@@ -1,3 +1,3 @@
-pub fn history(hist: &[String]) {
-    print!("{}", hist.join(""));
+pub fn history(hist: &[String])-> String {
+    hist.join("")
 }
