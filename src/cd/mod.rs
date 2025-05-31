@@ -13,19 +13,22 @@ pub fn cd(tab: &[String], current_dir: &mut PathBuf, history: &mut PathBuf, home
         history.push(&current_dir);
         current_dir.push(home);
     } else {
-        let path = tab.as_str();
+        let mut path = tab;
         if path != "-" {
             history.push(&current_dir);
         }
-        match path {
+        match path.as_str() {
             "~" => current_dir.push(home),
             "-" => {
                 current_dir.push(&history);
             }
             _ => {
+                if &path[0..1] == "~" {
+                    path = home.display().to_string() + &path[1..]
+                }
                 if &path[0..1] == "/" {
                     let mut copy_current_dir = current_dir.clone();
-                    copy_current_dir.push(path);
+                    copy_current_dir.push(path.clone());
                     copy_current_dir = copy_current_dir.components().collect::<PathBuf>();
                     match copy_current_dir.read_dir() {
                         Ok(_) => *current_dir = copy_current_dir,
