@@ -58,7 +58,6 @@ fn exec_command(
 }
 
 fn main() {
-    println!("s\n");
     let mut current_dir = current_dir().unwrap();
     let mut history_current_dir = current_dir.clone();
     let mut hist: Vec<String> = Vec::new();
