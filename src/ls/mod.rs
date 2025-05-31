@@ -32,7 +32,7 @@ pub fn ls(tab: &[String], current_dir: &PathBuf) -> String {
 
     match entries_result {
         Ok(entries) => match (a_flag, f_flag, l_flag) {
-            (true, true, true) => return ls_alF(entries),
+            (true, true, true) => return ls_alf(entries),
             (false, false, true) => return ls_l(entries),
             (false, true, false) => return ls_f(entries),
             (true, false, false) => return myls(entries, true),
@@ -54,7 +54,7 @@ pub fn ls(tab: &[String], current_dir: &PathBuf) -> String {
         },
     }
 }
-fn ls_alF(
+fn ls_alf(
     entries: ReadDir,
 ) -> String {
     for entry in entries.flatten() {
