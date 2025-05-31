@@ -1,22 +1,12 @@
+use chrono::{DateTime, Local};
+use std::fs::Metadata;
 use std::fs::{Permissions, ReadDir};
 use std::os::unix::fs::FileTypeExt;
 use std::os::unix::fs::MetadataExt;
 use std::os::unix::fs::PermissionsExt;
 use std::path::*;
-use chrono::{DateTime, Local};
-use std::fs::Metadata;
 use std::{fs, io};
 use users::*;
-use terminal_size::{terminal_size, Width};
-
-fn get_terminal_width() -> usize {
-    if let Some((Width(w), _)) = terminal_size() {
-        w as usize
-    } else {
-        80 
-    }
-}
-
 
 pub fn ls(tab: &[String], current_dir: &PathBuf) {
     let mut target_dir_str = current_dir.clone();
@@ -41,17 +31,9 @@ pub fn ls(tab: &[String], current_dir: &PathBuf) {
     match entries_result {
         Ok(entries) => match (a_flag, f_flag, l_flag) {
             (false, false, true) => ls_l(entries),
-            (false, true, false) => {
-                ls_f(entries);
-            }
-            (true, false, false) => {
-                print!(". ");
-                print!(".. ");
-                myls(entries, true);
-            }
-            _ => {
-                myls(entries, false);
-            }
+            (false, true, false) => ls_f(entries),
+            (true, false, false) => myls(entries, true),
+            _ => myls(entries, false),
         },
         Err(e) => match e.kind() {
             io::ErrorKind::NotFound => {
@@ -71,17 +53,19 @@ pub fn ls(tab: &[String], current_dir: &PathBuf) {
 }
 
 // Classic ls && -a flag
-fn myls(entries: ReadDir, dr: bool) {
-    let mut max_user = 0;
+fn myls(entries: ReadDir, showall: bool) {
+    let mut items = vec![];
+
     for entry in entries {
         match entry {
             Ok(entry) => {
                 let file_name_os = entry.file_name();
-                if &file_name_os.to_str().unwrap()[0..1] != "." && !dr {
-                    print!("{} ", file_name_os.to_str().unwrap());
-                    continue;
-                } else if dr {
-                    print!("{} ", file_name_os.to_str().unwrap());
+                let name = file_name_os.to_str().unwrap();
+
+                if !name.starts_with('.') && !showall {
+                    items.push(name.to_string());
+                } else if showall {
+                    items.push(name.to_string());
                 }
             }
             Err(e) => {
@@ -89,11 +73,23 @@ fn myls(entries: ReadDir, dr: bool) {
             }
         }
     }
+
+    items.sort();
+    if showall {
+        items.insert(0, "..".to_string());
+        items.insert(0, ".".to_string());
+    }
+
+    for item in items {
+        print!("{}  ", item);
+    }
     println!();
 }
 
+
 // -F flag //
 pub fn ls_f(entries: ReadDir) {
+    let mut items = vec![];
     for entry in entries {
         if let Ok(entry) = entry {
             let path = entry.path();
@@ -107,20 +103,25 @@ pub fn ls_f(entries: ReadDir) {
 
             if let Some(name) = entry.file_name().to_str() {
                 if file_type.is_dir() {
-                    print!("{}/ ", name);
+                    items.push(format!("{}/ ", name));
                 } else if file_type.is_symlink() {
-                    print!("{}@ ", name);
+                    items.push(format!("{}@ ", name));
                 } else if file_type.is_file() {
                     if !name.starts_with('.') {
                         if is_executable(&path) {
-                            print!("{}* ", name);
+                            items.push(format!("{}* ", name));
                         } else {
-                            print!("{} ", name);
+                            items.push(format!("{} ", name));
                         }
                     }
                 }
             }
         }
+    }
+
+    items.sort_by(|a, b| a.cmp(b));
+    for item in items {
+        print!("{}", item);
     }
     println!();
 }
@@ -167,7 +168,11 @@ fn ls_l(entries: ReadDir) {
     }
 
     println!("total {}", total_blocks / 2);
-
+    items.sort_by(|a, b| {
+        a.0.file_name()
+            .to_string_lossy()
+            .cmp(&b.0.file_name().to_string_lossy())
+    });
     // Second pass: print
     for (entry, metadata, user, grp) in items {
         let permissions = metadata.permissions();
