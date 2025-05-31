@@ -1,5 +1,6 @@
-pub fn echo(_args: &[String], entry: &String) {
-    parse_entry(entry);
+pub fn echo(args: &[String], _entry: &String) {
+    println!("{}", args.join(""));
+    // parse_entry(entry);
 }
 
 fn parse_entry(entry: &String) {
@@ -57,5 +58,6 @@ fn parse_entry(entry: &String) {
             _ => res.push(ch),
         }
     }
+    print!("{:#?}", res);
     print!("{res}");
 }
