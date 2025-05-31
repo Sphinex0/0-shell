@@ -1,136 +1,226 @@
 use chrono::{DateTime, Local};
 use std::fs::Metadata;
+use std::fs::*;
 use std::fs::{Permissions, ReadDir};
 use std::os::unix::fs::FileTypeExt;
 use std::os::unix::fs::MetadataExt;
 use std::os::unix::fs::PermissionsExt;
 use std::path::*;
-use std::{fs, io};
+use std::{fs};
 use users::*;
 
-pub fn ls(tab: &[String], current_dir: &PathBuf) -> String {
-    let mut target_dir_str = current_dir.clone();
-    let mut a_flag = false;
-    let mut f_flag = false;
-    let mut l_flag = false;
+#[derive(Debug)]
+struct Fileinfo {
+    name: String,
+    trimed_name: String,
+    hidden: bool,
+    user: String,
+    group: String,
+    entry: DirEntry,
+    metadata: Metadata,
+}
+impl Fileinfo {
+    fn new(entry: DirEntry, metadata: Metadata) -> Self {
+        let file_name_os = entry.file_name();
+        let name = file_name_os.to_string_lossy().to_string();
+        let hidden = name.starts_with('.');
 
+        let trimed_name = if hidden {
+            trime_dots(name.clone())
+        } else {
+            name.clone()
+        };
+
+        Self {
+            name,
+            trimed_name,
+            hidden,
+            user: String::new(),
+            group: String::new(),
+            entry,
+            metadata,
+        }
+    }
+}
+
+#[derive(Debug)]
+struct ls {
+    files: Vec<Fileinfo>,
+    a_flag: bool,
+    f_flag: bool,
+    l_flag: bool,
+}
+impl ls {
+    fn new() -> Self {
+        Self {
+            files: vec![],
+            a_flag: false,
+            f_flag: false,
+            l_flag: false,
+        }
+    }
+   
+    fn myls(&mut self, entries: ReadDir) -> String {
+        let mut max_user = 0;
+        let mut max_group = 0;
+        let mut max_size = 0;
+        let mut total_blocks = 0;
+
+        self.files.clear();
+
+        for entry in entries.flatten() {
+            let metadata = entry.metadata().unwrap();
+
+            let mut file = Fileinfo::new(entry, metadata);
+
+            let name = file.entry.file_name().to_string_lossy().into_owned();
+            file.name = name.clone();
+
+            if name.starts_with('.') {
+                file.trimed_name = trime_dots(name.clone());
+                file.hidden = true;
+            }
+
+            if self.f_flag {
+                let file_type = match file.entry.file_type() {
+                    Ok(ft) => ft,
+                    Err(err) => {
+                        eprintln!("Could not get file type: {}", err);
+                        continue;
+                    }
+                };
+                let path = file.entry.path();
+                    if file_type.is_dir() {
+                        file.name.push('/');
+                    } else if file_type.is_symlink() {
+                        file.name.push('@');
+                    } else if file_type.is_file() && is_executable(&path) {
+                        file.name.push('*');
+                    }
+            }
+
+            // Get user and group info
+            let user = get_usr(&file.metadata).unwrap();
+            let grp = get_grp(&file.metadata).unwrap();
+            file.user = user.name().to_str().unwrap().to_string();
+            file.group = grp.name().to_str().unwrap().to_string();
+
+            max_user = max_user.max(file.user.len());
+            max_group = max_group.max(file.group.len());
+            max_size = max_size.max(file.metadata.len().to_string().len());
+
+            // Track total blocks
+            total_blocks += file.metadata.blocks();
+
+            self.files.push(file);
+        }
+
+        self.files.sort_by(|a, b| a.trimed_name.cmp(&b.trimed_name));
+
+        let mut res = Vec::new();
+
+        for file in &self.files {
+            // Skip hidden files if -a is not set
+            if !self.a_flag && file.hidden {
+                continue;
+            }
+
+            if self.l_flag {
+                let permissions = file.metadata.permissions();
+                let file_type = file.metadata.file_type();
+
+                // Determine file type char like ls does
+                let type_char = if file_type.is_dir() {
+                    'd'
+                } else if file_type.is_symlink() {
+                    'l'
+                } else if file_type.is_socket() {
+                    's'
+                } else if file_type.is_fifo() {
+                    'p'
+                } else if file_type.is_char_device() {
+                    'c'
+                } else if file_type.is_block_device() {
+                    'b'
+                } else if file_type.is_file() {
+                    '-'
+                } else {
+                    '?'
+                };
+
+                let perms = format_permissions(&permissions);
+                let hardlink = file.metadata.nlink();
+                let file_size = file.metadata.len();
+
+                let last_mod_time = file.metadata.modified().unwrap();
+                let datetime: DateTime<Local> = last_mod_time.into();
+                let formatted_time = datetime.format("%b %e %H:%M").to_string();
+
+                res.push(format!(
+                    "{type_char}{perms} {hardlink:2} {:<width_user$} {:<width_grp$} {:>width_size$} {} {}\n",
+                    file.user,
+                    file.group,
+                    file_size,
+                    formatted_time,
+                    file.name,
+                    width_user = max_user,
+                    width_grp = max_group,
+                    width_size = max_size
+                ));
+                continue
+            } else {
+                res.push(format!("{}", file.name));
+            }
+        }
+        if self.l_flag {
+            return format!("total {}\n", total_blocks/2)+&res.join(" ")
+        }
+        res.join(" ")
+    }
+}
+
+pub fn ls(tab: &[String], current_dir: &PathBuf) -> String {
+    let mut ls = ls::new();
+    let mut target_dir_str = current_dir.clone();
     for flag in tab {
-        let target = flag.trim_start_matches('-');
-        match target {
-            "a" => a_flag = true,
-            "F" => f_flag = true,
-            "l" => l_flag = true,
-            _ => {
-                target_dir_str.push(target);
+        for (i, f) in flag.chars().enumerate() {
+            if i == 0 && f == '-' {
+                continue;
+            }
+            match f {
+                'a' => ls.a_flag = true,
+                'F' => ls.f_flag = true,
+                'l' => ls.l_flag = true,
+                _ => {
+                    target_dir_str.push(flag);
+                    break;
+                }
             }
         }
     }
+
     // read directory content
     let entries_result = fs::read_dir(&target_dir_str);
-    // let dotdot_metadata = fs::metadata(dotdot_entry);
-    // let dot_metadat = fs::metadata(current_dir);
-
     match entries_result {
-        Ok(entries) => match (a_flag, f_flag, l_flag) {
-            (true, true, true) => return ls_alf(entries),
-            (false, false, true) => return ls_l(entries),
-            (false, true, false) => return ls_f(entries),
-            (true, false, false) => return myls(entries, true),
-            _ => myls(entries, false),
-        },
-        Err(e) => match e.kind() {
-            io::ErrorKind::NotFound => {
-                return format!("Warning: Directory not found: {}", target_dir_str.display());
-            }
-            io::ErrorKind::PermissionDenied => {
-                format!(
-                    "Warning: permission denied to read directory: {}",
-                    target_dir_str.display()
-                )
-            }
-            _ => {
-                format!("Error: Could not read directory: {}", e)
-            }
-        },
-    }
-}
-fn ls_alf(
-    entries: ReadDir,
-) -> String {
-    for entry in entries.flatten() {
-        let file_name = entry.file_name();
-        let file_name_str = file_name.to_string_lossy();
-        if file_name_str == "." || file_name_str == ".." {
-            println!("{}", file_name_str);
+        Ok(entries) => return ls.myls(entries),
+        Err(_) => {
+            return format!(
+                "ls: cannot access '{}': No such file or directory",
+                &target_dir_str.to_string_lossy()
+            );
         }
     }
-    "".to_string()
-}
-// Classic ls && -a flag
-fn myls(entries: ReadDir, showall: bool) -> String {
-    let mut items = vec![];
-
-    for entry in entries {
-        match entry {
-            Ok(entry) => {
-                let file_name_os = entry.file_name();
-                let name = file_name_os.to_str().unwrap();
-
-                if !name.starts_with('.') && !showall {
-                    items.push(name.to_string());
-                } else if showall {
-                    items.push(name.to_string());
-                }
-            }
-            Err(e) => {
-                eprintln!("Warning: Could not read directory entry: {}", e)
-            }
-        }
-    }
-
-    items.sort();
-    if showall {
-        items.insert(0, "..".to_string());
-        items.insert(0, ".".to_string());
-    }
-
-    items.join(" ")
 }
 
-// -F flag //
-pub fn ls_f(entries: ReadDir) -> String {
-    let mut items = vec![];
-    for entry in entries {
-        if let Ok(entry) = entry {
-            let path = entry.path();
-            let file_type = match entry.file_type() {
-                Ok(ft) => ft,
-                Err(e) => {
-                    eprintln!("Could not get file type: {}", e);
-                    continue;
-                }
-            };
-
-            if let Some(name) = entry.file_name().to_str() {
-                if file_type.is_dir() {
-                    items.push(format!("{}/ ", name));
-                } else if file_type.is_symlink() {
-                    items.push(format!("{}@ ", name));
-                } else if file_type.is_file() {
-                    if !name.starts_with('.') {
-                        if is_executable(&path) {
-                            items.push(format!("{}* ", name));
-                        } else {
-                            items.push(format!("{} ", name));
-                        }
-                    }
-                }
-            }
+// helpers
+fn trime_dots(name: String) -> String {
+    for (i, char) in name.chars().enumerate() {
+        if char == ' ' {
+            continue;
         }
+        return name[i..].to_string();
     }
-
-    items.sort_by(|a, b| a.cmp(b));
-    items.join(" ")
+    return "".to_string();
 }
 
 fn is_executable(path: &Path) -> bool {
@@ -140,103 +230,6 @@ fn is_executable(path: &Path) -> bool {
     } else {
         false
     }
-}
-
-// ls -l
-fn ls_l(entries: ReadDir) -> String {
-    let mut total_blocks = 0;
-    let mut items = vec![];
-
-    // First pass: gather entries and max widths
-    let mut max_user = 0;
-    let mut max_group = 0;
-    let mut max_size = 0;
-
-    for entry in entries.flatten() {
-        let metadata = entry.metadata().unwrap();
-        if &entry.file_name().to_str().unwrap()[0..1] == "." {
-            continue;
-        }
-
-        let user = get_usr(&metadata).unwrap();
-        let grp = get_grp(&metadata).unwrap();
-
-        let user_str = user.name().to_str().unwrap().to_string();
-        let grp_str = grp.name().to_str().unwrap().to_string();
-        let file_size = metadata.size();
-        let blocks = metadata.blocks();
-
-        max_user = max_user.max(user_str.len());
-        max_group = max_group.max(grp_str.len());
-        max_size = max_size.max(file_size.to_string().len());
-
-        items.push((entry, metadata, user_str, grp_str));
-        total_blocks += blocks;
-    }
-
-    println!(" total {}", total_blocks / 2);
-    items.sort_by(|a, b| {
-        a.0.file_name()
-            .to_string_lossy()
-            .cmp(&b.0.file_name().to_string_lossy())
-    });
-
-    let mut res = vec![];
-    // Second pass: print
-    for (entry, metadata, user, grp) in items {
-        let permissions = metadata.permissions();
-        let file_type = metadata.file_type();
-        let type_char = if file_type.is_dir() {
-            'd'
-        } else if file_type.is_symlink() {
-            'l'
-        } else if file_type.is_socket() {
-            's'
-        } else if file_type.is_fifo() {
-            'p'
-        } else if file_type.is_char_device() {
-            'c'
-        } else if file_type.is_block_device() {
-            'b'
-        } else if file_type.is_file() {
-            '-'
-        } else {
-            '?'
-        };
-
-        let perms = format_permissions(&permissions);
-        let hardlink = metadata.nlink();
-        let file_size = metadata.size();
-        let last_mdf_time = metadata.modified().unwrap();
-        let datetime: DateTime<Local> = last_mdf_time.into();
-        let formatted_time = datetime.format("%b %e %H:%M").to_string();
-
-        res.push(format!(
-            "{type_char}{perms} {hardlink:2} {:<width_user$} {:<width_grp$} {:<width_size$} {} {}\n",
-            user,
-            grp,
-            file_size,
-            formatted_time,
-            entry.file_name().to_string_lossy(),
-            width_user = max_user,
-            width_grp = max_group,
-            width_size = max_size
-        ));
-    }
-
-    " ".to_owned() + &res.join(" ")
-}
-
-fn get_usr(metadata: &Metadata) -> Option<User> {
-    let uid = metadata.uid();
-    let user = get_user_by_uid(uid);
-    user
-}
-
-fn get_grp(metadata: &Metadata) -> Option<Group> {
-    let gid = metadata.gid();
-    let grp = get_group_by_gid(gid);
-    grp
 }
 
 fn format_permissions(permissions: &Permissions) -> String {
@@ -259,4 +252,16 @@ fn format_permissions(permissions: &Permissions) -> String {
     perm_str.push(if others & 0o1 != 0 { 'x' } else { '-' });
 
     perm_str
+}
+
+fn get_usr(metadata: &Metadata) -> Option<User> {
+    let uid = metadata.uid();
+    let user = get_user_by_uid(uid);
+    user
+}
+
+fn get_grp(metadata: &Metadata) -> Option<Group> {
+    let gid = metadata.gid();
+    let grp = get_group_by_gid(gid);
+    grp
 }
