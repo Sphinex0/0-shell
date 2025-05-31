@@ -86,8 +86,14 @@ impl CostumSplit for String {
             while let Some(ch) = chars.next() {
                 match state {
                     State::Normal => {
-                        if open_backtick && ch != '`' {
+                        if ch == '\\' && !open_backslash {
+                            open_backslash = true;
+                        } else if (open_backtick && ch != '`') || (open_backslash && open_backtick)
+                        {
                             backtick_str.push(ch);
+                            if open_backslash {
+                                open_backslash = false;
+                            }
                         } else if ch.is_whitespace() && !open_backslash {
                             command.add_string(&word);
 
@@ -110,12 +116,14 @@ impl CostumSplit for String {
                             open_backtick = true;
                             backtick_str.clear();
                         } else if ch == '`' && !open_backslash && open_backtick {
-                            // println!("res=>{backtick_str:?}");
-                            let (nested_command, _) = backtick_str.custom_split();
-                            command.add_argument(&nested_command);
+                            if !backtick_str.is_empty() {
+                                let (nested_command, err_quate) = backtick_str.custom_split();
+                                if err_quate {
+                                    print_error("Syntax error: Unterminated quoted string");
+                                }
+                                command.add_argument(&nested_command);
+                            }
                             open_backtick = false;
-                        } else if ch == '\\' {
-                            open_backslash = true;
                         } else {
                             if open_backslash {
                                 word.push(ch);
@@ -139,8 +147,13 @@ impl CostumSplit for String {
                             open_backtick = true;
                             backtick_str.clear();
                         } else if ch == '`' && !open_backslash && open_backtick {
-                            let (nested_command, _) = backtick_str.custom_split();
-                            command.add_argument(&nested_command);
+                            if !backtick_str.is_empty() {
+                                let (nested_command, err_quate) = backtick_str.custom_split();
+                                if err_quate {
+                                    print_error("Syntax error: Unterminated quoted string");
+                                }
+                                command.add_argument(&nested_command);
+                            }
                             open_backtick = false;
                         } else {
                             if open_backslash {
