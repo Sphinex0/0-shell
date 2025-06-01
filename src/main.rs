@@ -1,5 +1,3 @@
-
-
 use shell::*;
 use std::env::*;
 use std::io::Write;
@@ -84,7 +82,10 @@ fn main() {
             exit(0);
         }
 
-        let (mut command, mut open_quote) = entry.custom_split();
+        let (mut command, mut open_quote, mut quite1) = entry.custom_split();
+        if quite1 {
+            continue;
+        }
 
         if open_quote {
             loop {
@@ -97,13 +98,21 @@ fn main() {
                     break;
                 }
                 entry.push_str(&input_tmp);
-                let (input_tmp, open_quote2) = entry.custom_split();
+                let (input_tmp, open_quote2, quite) = entry.custom_split();
+                if quite {
+                    quite1 = quite;
+                    break;
+                }
                 open_quote = open_quote2;
                 command = input_tmp;
                 if !open_quote {
                     break;
                 }
             }
+        }
+
+        if quite1 {
+            continue;
         }
 
         // println!("command => {:?}", command);
