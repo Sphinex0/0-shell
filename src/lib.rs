@@ -8,6 +8,7 @@ pub mod mkdir;
 pub mod mv;
 pub mod pwd;
 pub mod rm;
+
 pub use cat::*;
 pub use cd::*;
 pub use cp::*;
@@ -48,11 +49,11 @@ impl Command {
 }
 
 pub trait CostumSplit {
-    fn custom_split(&self) -> (Command, bool);
+    fn custom_split(&self) -> (Command, bool, bool);
 }
 
 impl CostumSplit for String {
-    fn custom_split(&self) -> (Command, bool) {
+    fn custom_split(&self) -> (Command, bool, bool) {
         // println!("self => :{self:?}");
         let mut command = Command {
             name: String::new(),
@@ -63,6 +64,7 @@ impl CostumSplit for String {
         let mut open_backslash = false;
         let mut open_backtick = false;
         let mut backtick_str = String::new();
+        let mut quite_global = false;
 
         #[derive(Debug, PartialEq)]
         enum State {
@@ -117,9 +119,15 @@ impl CostumSplit for String {
                             backtick_str.clear();
                         } else if ch == '`' && !open_backslash && open_backtick {
                             if !backtick_str.is_empty() {
-                                let (nested_command, err_quate) = backtick_str.custom_split();
+                                let (nested_command, err_quate, quite) = backtick_str.custom_split();
+                                quite_global = quite;
                                 if err_quate {
                                     print_error("Syntax error: Unterminated quoted string");
+                                    let comm = Command {
+                                        name: String::new(),
+                                        args: vec![],
+                                    };
+                                    return (comm, false, true);
                                 }
                                 command.add_argument(&nested_command);
                             }
@@ -148,9 +156,15 @@ impl CostumSplit for String {
                             backtick_str.clear();
                         } else if ch == '`' && !open_backslash && open_backtick {
                             if !backtick_str.is_empty() {
-                                let (nested_command, err_quate) = backtick_str.custom_split();
+                                let (nested_command, err_quate,quite) = backtick_str.custom_split();
+                                quite_global = quite;
                                 if err_quate {
                                     print_error("Syntax error: Unterminated quoted string");
+                                    let comm = Command {
+                                        name: String::new(),
+                                        args: vec![],
+                                    };
+                                    return (comm, false, true);
                                 }
                                 command.add_argument(&nested_command);
                             }
@@ -189,7 +203,7 @@ impl CostumSplit for String {
         let open = matches!(state, State::DoubleQuote | State::SingleQuote)
             || open_backslash
             || open_backtick;
-        (command, open)
+        (command, open, quite_global)
     }
 }
 
