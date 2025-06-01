@@ -29,10 +29,7 @@ fn exec_command(
         //     cp(&args);
         //     None
         // }
-        "ls" => {
-            ls(&args, &current_dir);
-            None
-        }
+        "ls" => Some(ls(&args, &current_dir)),
         "cat" => Some(cat(args, current_dir)),
         "rm" => {
             rm(args, current_dir);
