@@ -19,7 +19,7 @@ fn exec_command(
         "pwd" => Some((pwd(current_dir), true)),
         "cd" => {
             // cd(args, home);
-            cd(args, history_current_dir,current_dir, home);
+            cd(args, history_current_dir, current_dir, home);
             None
         }
         // "mv" => {
@@ -47,7 +47,7 @@ fn exec_command(
             None
         }
         _ => {
-            print_error(&format!("Command <{}> not found", command));
+            print_error(&format!("Command <{}\x1b[31m> not found", command));
             None
         }
     }
@@ -162,11 +162,14 @@ fn main() {
                                             &home,
                                         );
                                         if let Some((out, _)) = output {
+                                            println!("out=>{out}");
                                             // out.split(" ")
                                             //     .for_each(|arg| sub_args.push(arg.to_string()));
                                             let words = out.split(" ").collect::<Vec<_>>();
                                             for (i, word) in words.iter().enumerate() {
-                                                sub_args.push(word.to_string());
+                                                if !word.is_empty() {
+                                                    sub_args.push(word.to_string());
+                                                }
                                                 if i > 0
                                                     && i != word.len().saturating_sub(1)
                                                     && words[i.saturating_sub(1)] != ""
@@ -175,6 +178,8 @@ fn main() {
                                                 }
                                             }
                                             // sub_args.push(out)
+                                        } else {
+                                            sub_args.pop();
                                         }
                                         // sub_args.push(output.unwrap_or_default());
                                     }
@@ -196,7 +201,9 @@ fn main() {
                             //     .for_each(|arg| first_pass_res.push(arg.to_string()));
                             let words = out.split(" ").collect::<Vec<_>>();
                             for (i, word) in words.iter().enumerate() {
-                                first_pass_res.push(word.to_string());
+                                if !word.is_empty() {
+                                    first_pass_res.push(word.to_string());
+                                }
                                 if i > 0
                                     && i != word.len().saturating_sub(1)
                                     && words[i.saturating_sub(1)] != ""
@@ -205,6 +212,8 @@ fn main() {
                                 }
                             }
                             // first_pass_res.push(out)
+                        } else {
+                            first_pass_res.pop();
                         }
                     }
                 }

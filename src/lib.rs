@@ -103,7 +103,7 @@ impl CostumSplit for String {
                             // }
 
                             if open_backslash {
-                                if ['\\', '`', '$'].contains(&ch) { 
+                                if ['\\', '`', '$'].contains(&ch) {
                                     backtick_str.push(ch);
                                 } else {
                                     backtick_str.push('\\');
@@ -135,6 +135,7 @@ impl CostumSplit for String {
                             open_backtick = true;
                             backtick_str.clear();
                         } else if ch == '`' && !open_backslash && open_backtick {
+                            backtick_str = backtick_str.trim_matches(' ').to_string();
                             if !backtick_str.is_empty() {
                                 let (nested_command, err_quate, quite) =
                                     backtick_str.custom_split();
@@ -173,6 +174,7 @@ impl CostumSplit for String {
                             open_backtick = true;
                             backtick_str.clear();
                         } else if ch == '`' && !open_backslash && open_backtick {
+                            backtick_str = backtick_str.trim_matches(' ').to_string();
                             if !backtick_str.is_empty() {
                                 let (nested_command, err_quate, quite) =
                                     backtick_str.custom_split();
