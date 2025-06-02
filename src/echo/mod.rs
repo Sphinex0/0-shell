@@ -1,17 +1,11 @@
-
-pub fn echo(args: &[String])-> String {
+pub fn echo(args: &[String]) -> String {
     // println!("echo args:{args:?}");
     let entry = args.join("");
-    let (res, newline) = parse_entry(&entry);
-    if newline {
-        format!("{}", res)
-    } else {
-        format!("{}", res)
-    }
+    let res = parse_entry(&entry);
+    format!("{}", res)
 }
 
-
-fn parse_entry(entry: &str) -> (String, bool) {
+fn parse_entry(entry: &str) -> String {
     let mut result = String::new();
     let mut chars = entry.chars().peekable();
 
@@ -25,7 +19,10 @@ fn parse_entry(entry: &str) -> (String, bool) {
                         't' => result.push('\t'),
                         'a' => result.push('\x07'),
                         'b' => result.push('\x08'),
-                        'c' => return (result, false),
+                        'c' => {
+                            result.push('\x1B');
+                            return result;
+                        }
                         'e' => result.push('\x1B'),
                         'f' => result.push('\x0C'),
                         'v' => result.push('\x0B'),
@@ -78,7 +75,7 @@ fn parse_entry(entry: &str) -> (String, bool) {
         }
     }
 
-    (result, true)
+    result
 }
 
 //   \b      A backspace character is output.
