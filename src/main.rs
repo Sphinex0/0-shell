@@ -18,7 +18,8 @@ fn exec_command(
         "echo" => Some(echo(args)),
         "pwd" => Some((pwd(current_dir), true)),
         "cd" => {
-            cd(args, current_dir, history_current_dir, home);
+            // cd(args, home);
+            cd(args, history_current_dir,current_dir, home);
             None
         }
         // "mv" => {
@@ -53,8 +54,9 @@ fn exec_command(
 }
 
 fn main() {
+    // set_current_dir(path)
+    let mut history_current_dir = current_dir().unwrap();
     let mut current_dir = current_dir().unwrap();
-    let mut history_current_dir = current_dir.clone();
     let mut hist: Vec<String> = Vec::new();
     let home = match home_dir() {
         Some(p) => p,
@@ -65,12 +67,13 @@ fn main() {
     };
 
     loop {
+        // let mut current_dir = current_dir().unwrap();
         let address = match current_dir.strip_prefix(&home) {
-            Ok(p) => "\x1b[1;31m~\x1b[1;32m/".to_string() + &p.display().to_string(),
+            Ok(p) => "\x1b[1;31m~\x1b[1;36m/".to_string() + &p.display().to_string(),
             Err(_) => current_dir.display().to_string(),
         };
 
-        print!("\x1b[1;33m➜  \x1b[1;32m{} \x1b[33m$ \x1b[0m", address);
+        print!("\x1b[1;33m➜  \x1b[1;36m{} \x1b[33m$ \x1b[0m", address);
         std::io::stdout().flush().unwrap();
         let mut entry = String::new();
         let size = stdin().read_line(&mut entry).unwrap();
