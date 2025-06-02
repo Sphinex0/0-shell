@@ -92,9 +92,26 @@ impl CostumSplit for String {
                             open_backslash = true;
                         } else if (open_backtick && ch != '`') || (open_backslash && open_backtick)
                         {
-                            backtick_str.push(ch);
+                            // println!("ch => {ch} oprn => {open_backslash}");
+                            // if ch == '"' && open_backslash {
+                            //     backtick_str.push(ch);
+                            // } else if ch != '"' {
+                            //     backtick_str.push(ch);
+                            // }
+                            // if open_backslash {
+                            //     open_backslash = false;
+                            // }
+
                             if open_backslash {
+                                if ['\\', '`', '$'].contains(&ch) { 
+                                    backtick_str.push(ch);
+                                } else {
+                                    backtick_str.push('\\');
+                                    backtick_str.push(ch);
+                                }
                                 open_backslash = false;
+                            } else {
+                                backtick_str.push(ch);
                             }
                         } else if ch.is_whitespace() && !open_backslash {
                             command.add_string(&word);
@@ -119,7 +136,8 @@ impl CostumSplit for String {
                             backtick_str.clear();
                         } else if ch == '`' && !open_backslash && open_backtick {
                             if !backtick_str.is_empty() {
-                                let (nested_command, err_quate, quite) = backtick_str.custom_split();
+                                let (nested_command, err_quate, quite) =
+                                    backtick_str.custom_split();
                                 quite_global = quite;
                                 if err_quate {
                                     print_error("Syntax error: Unterminated quoted string");
@@ -146,7 +164,7 @@ impl CostumSplit for String {
                             backtick_str.push(ch);
                         } else if ch == '"' && !open_backslash {
                             state = State::Normal;
-                        } else if ch == '\\' {
+                        } else if ch == '\\' && !open_backslash {
                             open_backslash = true;
                         } else if ch == '`' && !open_backslash && !open_backtick {
                             command.add_string(&word);
@@ -156,7 +174,8 @@ impl CostumSplit for String {
                             backtick_str.clear();
                         } else if ch == '`' && !open_backslash && open_backtick {
                             if !backtick_str.is_empty() {
-                                let (nested_command, err_quate,quite) = backtick_str.custom_split();
+                                let (nested_command, err_quate, quite) =
+                                    backtick_str.custom_split();
                                 quite_global = quite;
                                 if err_quate {
                                     print_error("Syntax error: Unterminated quoted string");
@@ -170,18 +189,30 @@ impl CostumSplit for String {
                             }
                             open_backtick = false;
                         } else {
-                            if open_backslash {
-                                if ['"', '\\', '`', '$'].contains(&ch) {
-                                    word.push(ch);
+                            if open_backtick {
+                                if open_backslash {
+                                    if ['"', '\\', '`', '$'].contains(&ch) {
+                                        backtick_str.push(ch);
+                                    } else {
+                                        backtick_str.push('\\');
+                                        backtick_str.push(ch);
+                                    }
+                                    open_backslash = false;
                                 } else {
-                                    word.push('\\');
+                                    backtick_str.push(ch);
+                                }
+                            } else {
+                                if open_backslash {
+                                    if ['"', '\\', '`', '$'].contains(&ch) {
+                                        word.push(ch);
+                                    } else {
+                                        word.push('\\');
+                                        word.push(ch);
+                                    }
+                                    open_backslash = false;
+                                } else {
                                     word.push(ch);
                                 }
-                                open_backslash = false;
-                            } else if open_backtick {
-                                backtick_str.push(ch);
-                            } else {
-                                word.push(ch);
                             }
                         }
                     }

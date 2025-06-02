@@ -37,3 +37,7 @@ echo `echo \`pwd\`` => /home/muboutoub/0-shell
 echo a `echo d` b   
 
 echo a `` b   
+
+ `echo hr `
+ echo `echo "d      f"`
+ `echo \\\\`

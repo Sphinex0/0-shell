@@ -13,10 +13,10 @@ fn exec_command(
     history_current_dir: &mut PathBuf,
     hist: &Vec<String>,
     home: &PathBuf,
-) -> Option<String> {
+) -> Option<(String, bool)> {
     match command {
         "echo" => Some(echo(args)),
-        "pwd" => Some(pwd(current_dir)),
+        "pwd" => Some((pwd(current_dir), true)),
         "cd" => {
             cd(args, current_dir, history_current_dir, home);
             None
@@ -29,8 +29,8 @@ fn exec_command(
         //     cp(&args);
         //     None
         // }
-        "ls" => Some(ls(&args, &current_dir)),
-        "cat" => Some(cat(args, current_dir)),
+        "ls" => Some((ls(&args, &current_dir), true)),
+        "cat" => Some((cat(args, current_dir), true)),
         "rm" => {
             rm(args, current_dir);
             None
@@ -39,7 +39,7 @@ fn exec_command(
             mkdir(args, current_dir);
             None
         }
-        "history" => Some(history(hist)),
+        "history" => Some((history(hist), true)),
         "exit" => exit(0),
         "clear" => {
             println!("\x1Bc");
@@ -70,7 +70,7 @@ fn main() {
             Err(_) => current_dir.display().to_string(),
         };
 
-        print!("a\x1b[1;33m➜  \x1b[1;32m{} \x1b[33m$ \x1b[0m", address);
+        print!("\x1b[1;33m➜  \x1b[1;32m{} \x1b[33m$ \x1b[0m", address);
         std::io::stdout().flush().unwrap();
         let mut entry = String::new();
         let size = stdin().read_line(&mut entry).unwrap();
@@ -158,8 +158,20 @@ fn main() {
                                             &hist,
                                             &home,
                                         );
-                                        if let Some(out) = output {
-                                            sub_args.push(out)
+                                        if let Some((out, _)) = output {
+                                            // out.split(" ")
+                                            //     .for_each(|arg| sub_args.push(arg.to_string()));
+                                            let words = out.split(" ").collect::<Vec<_>>();
+                                            for (i, word) in words.iter().enumerate() {
+                                                sub_args.push(word.to_string());
+                                                if i > 0
+                                                    && i != word.len().saturating_sub(1)
+                                                    && words[i.saturating_sub(1)] != ""
+                                                {
+                                                    sub_args.push(" ".to_string());
+                                                }
+                                            }
+                                            // sub_args.push(out)
                                         }
                                         // sub_args.push(output.unwrap_or_default());
                                     }
@@ -176,13 +188,27 @@ fn main() {
                             &home,
                         );
                         // first_pass_res.push(output.unwrap_or_default());
-                        if let Some(out) = output {
-                            first_pass_res.push(out)
+                        if let Some((out, _)) = output {
+                            // out.split(" ")
+                            //     .for_each(|arg| first_pass_res.push(arg.to_string()));
+                            let words = out.split(" ").collect::<Vec<_>>();
+                            for (i, word) in words.iter().enumerate() {
+                                first_pass_res.push(word.to_string());
+                                if i > 0
+                                    && i != word.len().saturating_sub(1)
+                                    && words[i.saturating_sub(1)] != ""
+                                {
+                                    first_pass_res.push(" ".to_string());
+                                }
+                            }
+                            // first_pass_res.push(out)
                         }
                     }
                 }
             }
         }
+
+        // println!("first_pass_res =>{:?}", first_pass_res);
 
         // Second Pass: Execute the final command
         if !first_pass_res.is_empty() && !first_pass_res[0].is_empty() {
@@ -196,8 +222,12 @@ fn main() {
                 &hist,
                 &home,
             );
-            if let Some(output) = output {
-                println!("{}", output);
+            if let Some((output, newline)) = output {
+                if newline {
+                    println!("{}", output);
+                } else {
+                    print!("{}", output);
+                }
             }
         }
 
