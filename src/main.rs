@@ -70,7 +70,7 @@ fn main() {
             Err(_) => current_dir.display().to_string(),
         };
 
-        print!("\x1b[1;33m➜  \x1b[1;32m{} \x1b[33m$ \x1b[0m", address);
+        print!("a\x1b[1;33m➜  \x1b[1;32m{} \x1b[33m$ \x1b[0m", address);
         std::io::stdout().flush().unwrap();
         let mut entry = String::new();
         let size = stdin().read_line(&mut entry).unwrap();
