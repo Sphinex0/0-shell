@@ -1,15 +1,22 @@
 use std::fs;
-use std::path::Path;
+use std::path::PathBuf;
 
-pub fn mkdir(args: &[&str]) {
-    if args.is_empty() {
-        eprintln!("mkdir: missing operand");
-        return;
-    }
-    for dname in args {
-        let path = Path::new(dname);
-        if let Err(err) = fs::create_dir(path) {
-            eprintln!("mkdir: cannot create directory '{}': {}", dname, err);
+use crate::print_error;
+
+pub fn mkdir(args: &[String], current_dir: &PathBuf) {
+    let path_copy: &mut PathBuf = &mut current_dir.clone();
+    let mut action_done: bool = false;
+
+    for arg in args {
+        let mut tmp = path_copy.clone();
+        tmp.push(arg);
+
+        if let Err(err) = fs::create_dir(tmp) {
+            print_error(&format!("{arg}: {err}"));
         }
+        action_done = true;
+    }
+    if !action_done {
+        print_error("mkdir: missing operand")
     }
 }

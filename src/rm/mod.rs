@@ -1,32 +1,43 @@
 use std::fs;
-use std::path::Path;
+use std::path::PathBuf;
 
-pub fn rm(args: &[&str]) {
-    let mut r = false;
-    let mut names = vec![];
-    for a in args {
-        if a == &"-r" {
-            r = true;
-        } else {
-            names.push(a);
+use crate::print_error;
+pub fn rm(args: &[String], current_dir: &PathBuf) {
+    let path_copy: &mut PathBuf = &mut current_dir.clone();
+    let mut action_done: bool = false;
+    for arg in args {
+        if arg != &"-r" {
+            let mut tmp = path_copy.clone();
+            let table = arg.split("/").collect::<Vec<_>>();
+            for p in table {
+                match p {
+                    "." => {}
+                    ".." => {
+                        tmp.pop();
+                    }
+                    _ => {
+                        tmp.push(p);
+                    }
+                }
+            }
+            // println!("{:?}",tmp);
+            match tmp.read_dir() {
+                Ok(_files) => {
+                    if let Err(err) = fs::remove_dir_all(tmp) {
+                        print_error(&format!("{arg}: {err}"));
+                    }
+                }
+                Err(_err) => {
+                    println!("{tmp:?}");
+                    if let Err(err) = fs::remove_file(tmp) {
+                        print_error(&format!("{arg}: {err}"));
+                    }
+                }
+            }
+            action_done = true;
         }
     }
-    if names.is_empty() {
-        eprintln!("rm: missing operand");
-        return;
-    }
-    for name in names {
-        let p = Path::new(name);
-        let res = if p.is_dir() && r {
-            fs::remove_dir_all(p)
-        } else if p.is_dir() {
-            eprintln!("rm: {}: is a directory", name);
-            return;
-        } else {
-            fs::remove_file(p)
-        };
-        if let Err(e) = res {
-            eprintln!("rm: {}: {}", name, e);
-        }        
+    if !action_done {
+        print_error("rm: missing operand")
     }
 }

@@ -7,8 +7,37 @@ exit
 
 
 team : mohamed, adnane
-cat //v1
-cp //v1
-rm (supporting -r) //v1
-mv //v1
-mkdir //v1
+cat
+cp
+mv
+rm (supporting -r)
+mkdir
+
+
+handle spaces in names (using "")
+handle path deleting
+handle ctrl+c not crashing
+hadnle cat witout arguments
+
+
+
+tests:
+
+"`"echo h"`"
+
+"e"'c'"ho" he'l'"l"o
+
+echo `echo d`hello
+
+ "`"t"`
+> "
+
+echo `echo \`pwd\`` => /home/muboutoub/0-shell
+
+echo a `echo d` b   
+
+echo a `` b   
+
+ `echo hr `
+ echo `echo "d      f"`
+ `echo \\\\`
