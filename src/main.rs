@@ -22,14 +22,14 @@ fn exec_command(
             cd(args, history_current_dir, current_dir, home);
             None
         }
-        // "mv" => {
-        //     mv(&args);
-        //     None
-        // }
-        // "cp" => {
-        //     cp(&args);
-        //     None
-        // }
+        "mv" => {
+            mv(&args);
+            None
+        }
+        "cp" => {
+            cp(&args);
+            None
+        }
         "ls" => Some((ls(&args, &current_dir), true)),
         "cat" => Some((cat(args, current_dir), true)),
         "rm" => {
