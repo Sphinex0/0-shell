@@ -46,6 +46,8 @@ impl Fileinfo {
 #[derive(Debug)]
 struct ls {
     files: Vec<Fileinfo>,
+    cur_dir: Fileinfo,
+    prev_dir: Fileinfo,
     a_flag: bool,
     f_flag: bool,
     l_flag: bool,
@@ -180,6 +182,9 @@ impl ls {
 pub fn ls(tab: &[String], current_dir: &PathBuf) -> String {
     let mut ls = ls::new();
     let mut target_dir_str = current_dir.clone();
+    let mut prev_dir = current_dir.clone();
+    prev_dir.push("/..");
+
     for flag in tab {
         for (i, f) in flag.chars().enumerate() {
             if i == 0 && f == '-' {
@@ -195,6 +200,35 @@ pub fn ls(tab: &[String], current_dir: &PathBuf) -> String {
                 }
             }
         }
+    }
+    
+    if self.a_flag {
+        match fs.metadata(&prev_dir) {
+                OK(metadata) {
+                    let file_name_os = file_path.file_name()
+                    let name = file_name_os.to_string_lossy().to_string();
+                    let hidden = name.starts_with('.');
+
+                    let trimed_name = if hidden {
+                    trime_dots(name.clone())
+                    } else {
+                     name.clone()
+                    };
+
+                    struct Fileinfo {
+                        name: file_name,
+                        trimed_name: String,
+                        hidden: bool,
+                        user: String,
+                        group: String,
+                        entry: DirEntry,
+                        metadata: Metadata,
+                    }
+                }
+                Err(_) {
+                    println!("can't find this dir")
+                }
+            }
     }
 
     // read directory content
