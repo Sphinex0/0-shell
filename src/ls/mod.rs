@@ -46,16 +46,18 @@ impl Fileinfo {
 #[derive(Debug)]
 struct ls {
     files: Vec<Fileinfo>,
-    cur_dir: Fileinfo,
-    prev_dir: Fileinfo,
+    cur_dir: PathBuf,
+    prev_dir: PathBuf,
     a_flag: bool,
     f_flag: bool,
     l_flag: bool,
 }
 impl ls {
-    fn new() -> Self {
+    fn new(prev_dir: &PathBuf, cur_dir: &PathBuf) -> Self {
         Self {
             files: vec![],
+            prev_dir: prev_dir.to_path_buf(),
+            cur_dir: cur_dir.to_path_buf(),
             a_flag: false,
             f_flag: false,
             l_flag: false,
@@ -177,14 +179,20 @@ impl ls {
 
         format!("total {}\n", total_blocks/2)+&res.join(" ")
     }
+
+    // gets the current directory and the prev directory meta data
+    // .. && .
+    fn prev_cur_dir_metadata(self) -> (Fileinfo, Fileinfo) {
+        /*get the current dir and the prev file infos*/
+    }
 }
 
 pub fn ls(tab: &[String], current_dir: &PathBuf) -> String {
-    let mut ls = ls::new();
     let mut target_dir_str = current_dir.clone();
     let mut prev_dir = current_dir.clone();
     prev_dir.push("/..");
-
+    let mut ls = ls::new(&prev_dir, current_dir);
+    
     for flag in tab {
         for (i, f) in flag.chars().enumerate() {
             if i == 0 && f == '-' {
@@ -200,35 +208,6 @@ pub fn ls(tab: &[String], current_dir: &PathBuf) -> String {
                 }
             }
         }
-    }
-    
-    if self.a_flag {
-        match fs.metadata(&prev_dir) {
-                OK(metadata) {
-                    let file_name_os = file_path.file_name()
-                    let name = file_name_os.to_string_lossy().to_string();
-                    let hidden = name.starts_with('.');
-
-                    let trimed_name = if hidden {
-                    trime_dots(name.clone())
-                    } else {
-                     name.clone()
-                    };
-
-                    struct Fileinfo {
-                        name: file_name,
-                        trimed_name: String,
-                        hidden: bool,
-                        user: String,
-                        group: String,
-                        entry: DirEntry,
-                        metadata: Metadata,
-                    }
-                }
-                Err(_) {
-                    println!("can't find this dir")
-                }
-            }
     }
 
     // read directory content
