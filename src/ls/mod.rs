@@ -119,7 +119,7 @@ impl ls {
             self.files.push(file);
         }
 
-        self.files.sort_by(|a, b| a.trimed_name.cmp(&b.trimed_name));
+        self.files.sort_by(|a, b| a.trimed_name.to_lowercase().cmp(&b.trimed_name.to_ascii_lowercase()));
 
         let mut res = Vec::new();
 
@@ -182,9 +182,9 @@ impl ls {
 
     // gets the current directory and the prev directory meta data
     // .. && .
-    fn prev_cur_dir_metadata(self) -> (Fileinfo, Fileinfo) {
-        /*get the current dir and the prev file infos*/
-    }
+    // fn prev_cur_dir_metadata(self) -> (Fileinfo, Fileinfo) {
+    //     /*get the current dir and the prev file infos*/
+    // }
 }
 
 pub fn ls(tab: &[String], current_dir: &PathBuf) -> String {
