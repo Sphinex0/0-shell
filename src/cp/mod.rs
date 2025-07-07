@@ -1,13 +1,13 @@
 use std::fs;
 use std::path::Path;
 
-pub fn cp(args: &[&str]) {
+pub fn cp(args: &[String]) {
     if args.len() != 2 {
         eprintln!("cp: wrong number of arguments");
         return;
     }
-    let src = Path::new(args[0]);
-    let dst = Path::new(args[1]);
+    let src = Path::new(&args[0]);
+    let dst = Path::new(&args[1]);
     if src.is_dir() {
         eprintln!("cp: '{}' is a directory", src.display());
         return;

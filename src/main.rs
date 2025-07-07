@@ -4,6 +4,9 @@ use std::io::Write;
 use std::io::stdin;
 use std::process::exit;
 
+use ctrlc;
+use std::sync::mpsc::channel;
+
 use std::path::PathBuf;
 
 fn exec_command(
@@ -18,7 +21,6 @@ fn exec_command(
         "echo" => Some(echo(args)),
         "pwd" => Some((pwd(current_dir), true)),
         "cd" => {
-            // cd(args, home);
             cd(args, history_current_dir, current_dir, home);
             None
         }
@@ -54,6 +56,11 @@ fn exec_command(
 }
 
 fn main() {
+    let (tx, _rx) = channel();
+
+    ctrlc::set_handler(move || tx.send(()).expect("Could not send signal on channel."))
+        .expect("Error setting Ctrl-C handler");
+
     // set_current_dir(path)
     let mut history_current_dir = current_dir().unwrap();
     let mut current_dir = current_dir().unwrap();
@@ -67,6 +74,7 @@ fn main() {
     };
 
     loop {
+        
         // let mut current_dir = current_dir().unwrap();
         let address = match current_dir.strip_prefix(&home) {
             Ok(p) => "\x1b[1;31m~\x1b[1;36m/".to_string() + &p.display().to_string(),
@@ -82,11 +90,7 @@ fn main() {
             exit(0);
         }
 
-        let (mut command, mut open_quote, mut quite1) = entry.custom_split();
-        if quite1 {
-            continue;
-        }
-
+        let (mut command, mut open_quote) = entry.custom_split();
         if open_quote {
             loop {
                 print!("\x1b[33m> \x1b[0m");
@@ -98,11 +102,7 @@ fn main() {
                     break;
                 }
                 entry.push_str(&input_tmp);
-                let (input_tmp, open_quote2, quite) = entry.custom_split();
-                if quite {
-                    quite1 = quite;
-                    break;
-                }
+                let (input_tmp, open_quote2) = entry.custom_split();
                 open_quote = open_quote2;
                 command = input_tmp;
                 if !open_quote {
@@ -111,7 +111,7 @@ fn main() {
             }
         }
 
-        if quite1 {
+        if command.name.is_empty() {
             continue;
         }
 
@@ -122,124 +122,19 @@ fn main() {
             continue;
         }
 
-        // First Pass: Process command and substitutions
-        let mut first_pass_res: Vec<String> = Vec::new();
-        if !command.name.is_empty() {
-            first_pass_res.push(command.name.clone());
-        }
-        for arg in command.args {
-            match arg {
-                CommandPart::String(arg) => {
-                    if !arg.is_empty() {
-                        first_pass_res.push(arg);
-                    }
-                }
-                CommandPart::Substitution(sub_command) => {
-                    if !sub_command.name.is_empty() {
-                        let mut sub_args: Vec<String> = Vec::new();
-                        for sub_arg in sub_command.args {
-                            // if let CommandPart::String(sub_arg_str) = sub_arg {
-                            //     sub_args.push(sub_arg_str);
-                            // }
-
-                            ///////////////////
-                            match sub_arg {
-                                CommandPart::String(sub_arg_str) => sub_args.push(sub_arg_str),
-                                CommandPart::Substitution(sub_command) => {
-                                    if !sub_command.name.is_empty() {
-                                        let sub_args2: Vec<String> = Vec::new();
-                                        for sub_arg in sub_command.args {
-                                            if let CommandPart::String(sub_arg_str) = sub_arg {
-                                                sub_args.push(sub_arg_str);
-                                            }
-                                        }
-                                        let output = exec_command(
-                                            &sub_command.name,
-                                            &sub_args2,
-                                            &mut current_dir,
-                                            &mut history_current_dir,
-                                            &hist,
-                                            &home,
-                                        );
-                                        if let Some((out, _)) = output {
-                                            println!("out=>{out}");
-                                            // out.split(" ")
-                                            //     .for_each(|arg| sub_args.push(arg.to_string()));
-                                            let words = out.split(" ").collect::<Vec<_>>();
-                                            for (i, word) in words.iter().enumerate() {
-                                                if !word.is_empty() {
-                                                    sub_args.push(word.to_string());
-                                                }
-                                                if i > 0
-                                                    && i != word.len().saturating_sub(1)
-                                                    && words[i.saturating_sub(1)] != ""
-                                                {
-                                                    sub_args.push(" ".to_string());
-                                                }
-                                            }
-                                            // sub_args.push(out)
-                                        } else {
-                                            sub_args.pop();
-                                        }
-                                        // sub_args.push(output.unwrap_or_default());
-                                    }
-                                }
-                            }
-                            ///////////////////
-                        }
-                        let output = exec_command(
-                            &sub_command.name,
-                            &sub_args,
-                            &mut current_dir,
-                            &mut history_current_dir,
-                            &hist,
-                            &home,
-                        );
-                        // first_pass_res.push(output.unwrap_or_default());
-                        if let Some((out, _)) = output {
-                            // out.split(" ")
-                            //     .for_each(|arg| first_pass_res.push(arg.to_string()));
-                            let words = out.split(" ").collect::<Vec<_>>();
-                            for (i, word) in words.iter().enumerate() {
-                                if !word.is_empty() {
-                                    first_pass_res.push(word.to_string());
-                                }
-                                if i > 0
-                                    && i != word.len().saturating_sub(1)
-                                    && words[i.saturating_sub(1)] != ""
-                                {
-                                    first_pass_res.push(" ".to_string());
-                                }
-                            }
-                            // first_pass_res.push(out)
-                        } else {
-                            first_pass_res.pop();
-                        }
-                    }
-                }
-            }
-        }
-
-        // println!("first_pass_res =>{:?}", first_pass_res);
-
-        // Second Pass: Execute the final command
-        if !first_pass_res.is_empty() && !first_pass_res[0].is_empty() {
-            let command = &first_pass_res[0];
-            let args = &first_pass_res[1..];
-            let output = exec_command(
-                command,
-                args,
-                &mut current_dir,
-                &mut history_current_dir,
-                &hist,
-                &home,
-            );
-            if let Some((output, newline)) = output {
-                if newline {
-                    println!("{}", output);
-                } else {
-                    print!("{}", output);
-                }
+        let output = exec_command(
+            &command.name,
+            &command.args,
+            &mut current_dir,
+            &mut history_current_dir,
+            &hist,
+            &home,
+        );
+        if let Some((output, newline)) = output {
+            if newline {
+                println!("{}", output);
+            } else {
+                print!("{}", output);
             }
         }
 

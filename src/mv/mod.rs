@@ -1,13 +1,13 @@
 use std::fs;
 use std::path::Path;
 
-pub fn mv(args: &[&str]) {
+pub fn mv(args: &[String]) {
     if args.len() != 2 {
         eprintln!("mv: wrong number of arguments");
         return;
     }
-    let src = Path::new(args[0]);
-    let dst = Path::new(args[1]);
+    let src = Path::new(&args[0]);
+    let dst = Path::new(&args[1]);
     let dst = if dst.is_dir() {
         match src.file_name() {
             Some(name) => dst.join(name),
