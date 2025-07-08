@@ -16,28 +16,16 @@ struct Fileinfo {
     hidden: bool,
     user: String,
     group: String,
-    entry: DirEntry,
     metadata: Metadata,
 }
 impl Fileinfo {
-    fn new(entry: DirEntry, metadata: Metadata) -> Self {
-        let file_name_os = entry.file_name();
-        let name = file_name_os.to_string_lossy().to_string();
-        let hidden = name.starts_with('.');
-
-        let trimed_name = if hidden {
-            trime_dots(name.clone())
-        } else {
-            name.clone()
-        };
-
+    fn new(metadata: Metadata) -> Self {
         Self {
-            name,
-            trimed_name,
-            hidden,
+            name: String::new(),
+            trimed_name: String::new(),
+            hidden: false,
             user: String::new(),
             group: String::new(),
-            entry,
             metadata,
         }
     }
@@ -64,6 +52,28 @@ impl ls {
         }
     }
 
+    fn get(&self, path: &str) -> Fileinfo {
+        let target_path = if path == "." {
+            &self.cur_dir
+        } else {
+            &self.prev_dir
+        };
+
+        // Try to get metadata
+        let metadata = fs::metadata(target_path).unwrap_or_else(|_| {
+            Metadata::from(fs::File::open("/dev/null").unwrap().metadata().unwrap()) // dummy fallback
+        });
+
+        Fileinfo {
+            name: path.to_string(),
+            trimed_name: ".".to_string(),
+            hidden: true,
+            user: String::new(),
+            group: String::new(),
+            metadata,
+        }
+    }
+
     fn myls(&mut self, entries: ReadDir) -> String {
         let mut max_user = 0;
         let mut max_group = 0;
@@ -72,12 +82,15 @@ impl ls {
 
         self.files.clear();
 
+        self.files.push(self.get("."));
+        self.files.push(self.get(".."));
+
         for entry in entries.flatten() {
             let metadata = entry.metadata().unwrap();
 
-            let mut file = Fileinfo::new(entry, metadata);
+            let mut file = Fileinfo::new(metadata);
 
-            let name = file.entry.file_name().to_string_lossy().into_owned();
+            let name = entry.file_name().to_string_lossy().into_owned();
             file.name = name.clone();
 
             if name.starts_with('.') {
@@ -86,14 +99,14 @@ impl ls {
             }
 
             if self.f_flag {
-                let file_type = match file.entry.file_type() {
+                let file_type = match entry.file_type() {
                     Ok(ft) => ft,
                     Err(err) => {
                         eprintln!("Could not get file type: {}", err);
                         continue;
                     }
                 };
-                let path = file.entry.path();
+                let path = entry.path();
                 if file_type.is_dir() {
                     file.name.push('/');
                 } else if file_type.is_symlink() {
@@ -116,9 +129,6 @@ impl ls {
                 continue;
             }
 
-            // Track total blocks
-            total_blocks += file.metadata.blocks();
-
             self.files.push(file);
         }
 
@@ -132,6 +142,9 @@ impl ls {
             if !self.a_flag && file.hidden {
                 continue;
             }
+
+            // Track total blocks
+            total_blocks += file.metadata.blocks();
 
             if self.l_flag {
                 let permissions = file.metadata.permissions();
@@ -184,12 +197,6 @@ impl ls {
         let total_lines = format!("total {}\n", (total_blocks + 1) / 2);
         total_lines + &res.join(" ")
     }
-
-    // gets the current directory and the prev directory meta data
-    // .. && .
-    // fn prev_cur_dir_metadata(self) -> (Fileinfo, Fileinfo) {
-    //     /*get the current dir and the prev file infos*/
-    // }
 }
 
 pub fn ls(tab: &[String], current_dir: &PathBuf) -> String {
