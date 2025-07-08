@@ -1,4 +1,7 @@
 use chrono::{DateTime, Local};
+use libc::strcoll;
+use std::ffi::CString;
+use std::fs;
 use std::fs::Metadata;
 use std::fs::*;
 use std::fs::{Permissions, ReadDir};
@@ -6,7 +9,6 @@ use std::os::unix::fs::FileTypeExt;
 use std::os::unix::fs::MetadataExt;
 use std::os::unix::fs::PermissionsExt;
 use std::path::*;
-use std::{fs};
 use users::*;
 
 #[derive(Debug)]
@@ -63,7 +65,7 @@ impl ls {
             l_flag: false,
         }
     }
-   
+
     fn myls(&mut self, entries: ReadDir) -> String {
         let mut max_user = 0;
         let mut max_group = 0;
@@ -94,13 +96,13 @@ impl ls {
                     }
                 };
                 let path = file.entry.path();
-                    if file_type.is_dir() {
-                        file.name.push('/');
-                    } else if file_type.is_symlink() {
-                        file.name.push('@');
-                    } else if file_type.is_file() && is_executable(&path) {
-                        file.name.push('*');
-                    }
+                if file_type.is_dir() {
+                    file.name.push('/');
+                } else if file_type.is_symlink() {
+                    file.name.push('@');
+                } else if file_type.is_file() && is_executable(&path) {
+                    file.name.push('*');
+                }
             }
 
             // Get user and group info
@@ -112,6 +114,9 @@ impl ls {
             max_user = max_user.max(file.user.len());
             max_group = max_group.max(file.group.len());
             max_size = max_size.max(file.metadata.len().to_string().len());
+            if !self.a_flag && file.hidden {
+                continue;
+            }
 
             // Track total blocks
             total_blocks += file.metadata.blocks();
@@ -119,7 +124,14 @@ impl ls {
             self.files.push(file);
         }
 
-        self.files.sort_by(|a, b| a.trimed_name.to_lowercase().cmp(&b.trimed_name.to_ascii_lowercase()));
+
+
+self.files.sort_by(|a, b| {
+    let ca = CString::new(a.name.clone()).unwrap();
+    let cb = CString::new(b.name.clone()).unwrap();
+    let cmp = unsafe { strcoll(ca.as_ptr(), cb.as_ptr()) };
+    cmp.cmp(&0)
+});
 
         let mut res = Vec::new();
 
@@ -171,13 +183,14 @@ impl ls {
                     width_grp = max_group,
                     width_size = max_size
                 ));
-                continue
+                continue;
             } else {
                 res.push(format!("{}", file.name));
             }
         }
 
-        format!("total {}\n", total_blocks/2)+&res.join(" ")
+        let total_lines = format!("total {}\n", (total_blocks + 1) / 2);
+        total_lines + &res.join(" ")
     }
 
     // gets the current directory and the prev directory meta data
@@ -192,7 +205,7 @@ pub fn ls(tab: &[String], current_dir: &PathBuf) -> String {
     let mut prev_dir = current_dir.clone();
     prev_dir.push("/..");
     let mut ls = ls::new(&prev_dir, current_dir);
-    
+
     for flag in tab {
         for (i, f) in flag.chars().enumerate() {
             if i == 0 && f == '-' {
