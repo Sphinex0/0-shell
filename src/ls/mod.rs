@@ -64,6 +64,12 @@ impl ls {
             Metadata::from(fs::File::open("/dev/null").unwrap().metadata().unwrap()) // dummy fallback
         });
 
+        let mut name = path.to_string();
+
+        if self.f_flag {
+            name.push('/');
+        }
+
         Fileinfo {
             name: path.to_string(),
             trimed_name: ".".to_string(),
@@ -126,11 +132,11 @@ impl ls {
 
         self.files
             .sort_by(|a, b| match (a.name.as_str(), b.name.as_str()) {
-                (".", ".") | ("..", "..") => std::cmp::Ordering::Equal,
-                (".", _) => std::cmp::Ordering::Less,
-                (_, ".") => std::cmp::Ordering::Greater,
-                ("..", _) => std::cmp::Ordering::Less,
-                (_, "..") => std::cmp::Ordering::Greater,
+                (".", "./") | ("../", "../") | (".", ".") | ("..", "..") => std::cmp::Ordering::Equal,
+                ("./", _) | (".", _) => std::cmp::Ordering::Less,
+                (_, "./") | (_, ".") => std::cmp::Ordering::Greater,
+                ("../", _)| ("..", _) => std::cmp::Ordering::Less,
+                (_, "../") | (_, "..") => std::cmp::Ordering::Greater,
                 _ => a.name.cmp(&b.name),
             });
 
