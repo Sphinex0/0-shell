@@ -1,6 +1,4 @@
 use chrono::{DateTime, Local};
-use libc::strcoll;
-use std::ffi::CString;
 use std::fs;
 use std::fs::Metadata;
 use std::fs::*;
@@ -124,14 +122,8 @@ impl ls {
             self.files.push(file);
         }
 
-
-
-self.files.sort_by(|a, b| {
-    let ca = CString::new(a.name.clone()).unwrap();
-    let cb = CString::new(b.name.clone()).unwrap();
-    let cmp = unsafe { strcoll(ca.as_ptr(), cb.as_ptr()) };
-    cmp.cmp(&0)
-});
+        self.files
+            .sort_by(|a, b| a.name.as_bytes().cmp(b.name.as_bytes()));
 
         let mut res = Vec::new();
 
