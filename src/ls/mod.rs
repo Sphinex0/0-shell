@@ -116,6 +116,35 @@ impl ls {
                 }
             }
 
+            
+            if !self.a_flag && file.hidden {
+                continue;
+            }
+
+            self.files.push(file);
+        }
+
+        self.files
+            .sort_by(|a, b| match (a.name.as_str(), b.name.as_str()) {
+                (".", ".") | ("..", "..") => std::cmp::Ordering::Equal,
+                (".", _) => std::cmp::Ordering::Less,
+                (_, ".") => std::cmp::Ordering::Greater,
+                ("..", _) => std::cmp::Ordering::Less,
+                (_, "..") => std::cmp::Ordering::Greater,
+                _ => a.name.cmp(&b.name),
+            });
+
+        let mut res = Vec::new();
+
+        for file in &mut self.files {
+            // Skip hidden files if -a is not set
+            if !self.a_flag && file.hidden {
+                continue;
+            }
+
+            // Track total blocks
+            total_blocks += file.metadata.blocks();
+
             // Get user and group info
             let user = get_usr(&file.metadata).unwrap();
             let grp = get_grp(&file.metadata).unwrap();
@@ -125,26 +154,6 @@ impl ls {
             max_user = max_user.max(file.user.len());
             max_group = max_group.max(file.group.len());
             max_size = max_size.max(file.metadata.len().to_string().len());
-            if !self.a_flag && file.hidden {
-                continue;
-            }
-
-            self.files.push(file);
-        }
-
-        self.files
-            .sort_by(|a, b| a.name.as_bytes().cmp(b.name.as_bytes()));
-
-        let mut res = Vec::new();
-
-        for file in &self.files {
-            // Skip hidden files if -a is not set
-            if !self.a_flag && file.hidden {
-                continue;
-            }
-
-            // Track total blocks
-            total_blocks += file.metadata.blocks();
 
             if self.l_flag {
                 let permissions = file.metadata.permissions();
@@ -194,7 +203,7 @@ impl ls {
             }
         }
 
-        let total_lines = format!("total {}\n", (total_blocks + 1) / 2);
+        let total_lines = format!("total {}\n ", (total_blocks + 1) / 2);
         total_lines + &res.join(" ")
     }
 }
