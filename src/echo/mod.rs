@@ -1,12 +1,6 @@
-pub fn echo(args: &[String], _entry: &String)-> String {
-    // println!("echo args:{args:?}");
+pub fn echo(args: &[String]) -> (String, bool) {
     let entry = args.join("");
-    let (res, newline) = parse_entry(&entry);
-    if newline {
-        format!("{}", res)
-    } else {
-        format!("{}", res)
-    }
+    parse_entry(&entry)
 }
 
 fn parse_entry(entry: &str) -> (String, bool) {

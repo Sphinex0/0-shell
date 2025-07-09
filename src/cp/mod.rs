@@ -26,6 +26,4 @@ pub fn cp(args: &[String]) {
     if let Err(err) = fs::copy(src, final_dst) {
         eprintln!("cp: {}: {}", src.display(), err);
     }
-}pub fn cp(tab: &[String]){
-    println!("{tab:?}")
 }
