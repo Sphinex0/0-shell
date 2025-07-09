@@ -263,6 +263,9 @@ pub fn ls(tab: &[String], current_dir: &PathBuf) -> String {
         match fs::read_dir(&dir) {
             Ok(entries) => {
                 output.push_str(&ls.myls(entries));
+                if i != files.len()-1 {
+                    output.push_str("\n");
+                }
             }
             Err(err) => {
                 let error_message = match err.kind() {
