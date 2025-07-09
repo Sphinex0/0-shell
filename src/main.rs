@@ -33,7 +33,7 @@ fn exec_command(
             None
         }
         "ls" => Some((ls(&args, &current_dir), true)),
-        "cat" => Some((cat(args, current_dir), true)),
+        "cat" => Some((cat(args, current_dir), false)),
         "rm" => {
             rm(args, current_dir);
             None
@@ -62,7 +62,7 @@ fn main() {
         .expect("Error setting Ctrl-C handler");
 
     println!(
-    "\x1b[1;31m
+        "\x1b[1;31m
      ██████╗     ███████╗██╗  ██╗███████╗██╗     ██╗     
     ██╔═████╗    ██╔════╝██║  ██║██╔════╝██║     ██║     
     ██║██╔██║    ███████╗███████║█████╗  ██║     ██║     
@@ -70,7 +70,8 @@ fn main() {
     ╚██████╔╝    ███████║██║  ██║███████╗███████╗███████╗
     ╚═════╝     ╚══════╝╚═╝  ╚═╝╚══════╝╚══════╝╚══════╝
 
-    \x1b[1;0m");
+    \x1b[1;0m"
+    );
 
     // set_current_dir(path)
     let mut history_current_dir = current_dir().unwrap();
@@ -85,7 +86,6 @@ fn main() {
     };
 
     loop {
-        
         // let mut current_dir = current_dir().unwrap();
         let address = match current_dir.strip_prefix(&home) {
             Ok(p) => "\x1b[1;31m~\x1b[1;36m/".to_string() + &p.display().to_string(),
@@ -109,7 +109,7 @@ fn main() {
                 std::io::stdout().flush().unwrap();
                 let size = stdin().read_line(&mut input_tmp).unwrap();
                 if size == 0 {
-                    println!();
+                    // println!();
                     break;
                 }
                 entry.push_str(&input_tmp);

@@ -224,7 +224,7 @@ impl Ls {
 
         let mut total_lines = String::new();
         if self.l_flag && !self.is_file {
-            total_lines = format!(" total {}\n ", (total_blocks + 1) / 2);
+            total_lines = format!(" l_flagtotal {}\n ", (total_blocks + 1) / 2);
         }
         total_lines + &res.join(" ")
     }
