@@ -19,7 +19,7 @@ pub fn mv(args: &[String]) {
     } else {
         dst.to_path_buf()
     };
-    if let Err(e) = fs::rename(src, &dst) {
+    if let Err(_) = fs::rename(src, &dst) {
         let copied = fs::copy(src, &dst);
         if copied.is_ok() {
             let deleted = fs::remove_file(src);
