@@ -148,12 +148,14 @@ impl ls {
                 continue;
             }
 
-            // Track total blocks
-            total_blocks += file.metadata.blocks();
+            if self.l_flag {
+                // Track total blocks
+                total_blocks += file.metadata.blocks();
+            }
 
             // Get user and group info
             let user = get_usr(&file.metadata).unwrap();
-            let grp = get_grp(&file.metadata).unwrap();
+            let grp = get_grp(&file.metadata);
             file.user = user.name().to_str().unwrap().to_string();
             file.group = grp.name().to_str().unwrap().to_string();
 
@@ -209,7 +211,10 @@ impl ls {
             }
         }
 
-        let total_lines = format!("total {}\n ", (total_blocks + 1) / 2);
+        let mut total_lines= String::new();
+        if self.l_flag {
+            total_lines = format!("total {}\n ", (total_blocks + 1) / 2);
+        }
         total_lines + &res.join(" ")
     }
 }
@@ -298,8 +303,8 @@ fn get_usr(metadata: &Metadata) -> Option<User> {
     user
 }
 
-fn get_grp(metadata: &Metadata) -> Option<Group> {
+fn get_grp(metadata: &Metadata) -> Group {
     let gid = metadata.gid();
-    let grp = get_group_by_gid(gid);
+    let grp = get_group_by_gid(gid).unwrap_or(Group::new(gid, "root"));
     grp
 }
