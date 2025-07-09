@@ -40,7 +40,7 @@ struct Ls {
     a_flag: bool,
     f_flag: bool,
     l_flag: bool,
-    file_name: String,
+    files_names: Vec<String>,
 }
 impl Ls {
     fn new(prev_dir: &PathBuf, cur_dir: &PathBuf) -> Self {
@@ -51,7 +51,7 @@ impl Ls {
             a_flag: false,
             f_flag: false,
             l_flag: false,
-            file_name: String::new(),
+            files_names: Vec::new(),
         }
     }
 
@@ -226,52 +226,65 @@ impl Ls {
 pub fn ls(tab: &[String], current_dir: &PathBuf) -> String {
     let mut target_dir_str = current_dir.clone();
     let mut prev_dir = current_dir.clone();
-    prev_dir.push("/..");
+    prev_dir.push("..");
+
     let mut ls = Ls::new(&prev_dir, current_dir);
 
-    for flag in tab {
-        for (i, f) in flag.chars().enumerate() {
-            if i == 0 && f == '-' {
-                continue;
-            }
-            match f {
-                'a' => ls.a_flag = true,
-                'F' => ls.f_flag = true,
-                'l' => ls.l_flag = true,
-                _ => {
-                    ls.file_name = flag.to_string();
-                    target_dir_str.push(flag);
-                    break;
+    for arg in tab {
+        if arg.starts_with('-') {
+            for ch in arg.chars().skip(1) {
+                match ch {
+                    'a' => ls.a_flag = true,
+                    'F' => ls.f_flag = true,
+                    'l' => ls.l_flag = true,
+                    _ => {}
                 }
+            }
+        } else {
+            if arg.trim().len() != 0 {
+                ls.files_names.push(arg.to_string());
             }
         }
     }
 
-    let entries_result = fs::read_dir(&target_dir_str);
-    match entries_result {
-        Ok(entries) => return ls.myls(entries),
-        Err(err) => {
-            let error_message = match err.kind() {
-                ErrorKind::NotFound => format!(
-                    "ls: cannot access '{}': No such file or directory",
-                    &target_dir_str.to_string_lossy()
-                ),
-                ErrorKind::PermissionDenied => format!(
-                    "ls: cannot open directory '{}': Permission denied",
-                    &target_dir_str.to_string_lossy()
-                ),
-                ErrorKind::NotADirectory => { 
-                    format!("{}", ls.file_name)
-                }
-                _ => format!(
-                    "ls: cannot access '{}': {}",
-                    &target_dir_str.to_string_lossy(),
-                    err.to_string()
-                ),
-            };
-            return error_message;
+    if ls.files_names.is_empty() {
+        ls.files_names.push(".".to_string());
+    }
+
+    let mut output = String::new();
+
+    let files = ls.files_names.clone();
+    for (i, file_name) in files.iter().enumerate() {
+        let mut dir = target_dir_str.clone();
+        dir.push(file_name);
+        if files.len() > 1 {
+            output.push_str(&format!("{}:\n", file_name));
+        }
+        match fs::read_dir(&dir) {
+            Ok(entries) => {
+                output.push_str(&ls.myls(entries));
+            }
+            Err(err) => {
+                let error_message = match err.kind() {
+                    ErrorKind::NotFound => format!(
+                        "ls: cannot access '{}': No such file or directory",
+                        dir.to_string_lossy()
+                    ),
+                    ErrorKind::PermissionDenied => format!(
+                        "ls: cannot open directory '{}': Permission denied",
+                        dir.to_string_lossy()
+                    ),
+                    ErrorKind::NotADirectory => format!("{}", file_name),
+                    _ => format!("ls: cannot access '{}': {}", dir.to_string_lossy(), err),
+                };
+                output.push_str(&error_message);
+            }
+        }
+        if files.len() > 1 && i != files.len() - 1 {
+            output.push('\n');
         }
     }
+    output
 }
 
 // helpers
