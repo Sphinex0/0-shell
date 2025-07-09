@@ -2,6 +2,7 @@ use chrono::{DateTime, Local};
 use std::fs;
 use std::fs::Metadata;
 use std::fs::{Permissions, ReadDir};
+use std::io::ErrorKind;
 use std::os::unix::fs::FileTypeExt;
 use std::os::unix::fs::MetadataExt;
 use std::os::unix::fs::PermissionsExt;
@@ -39,8 +40,8 @@ struct Ls {
     a_flag: bool,
     f_flag: bool,
     l_flag: bool,
+    file_name: String,
 }
-
 impl Ls {
     fn new(prev_dir: &PathBuf, cur_dir: &PathBuf) -> Self {
         Self {
@@ -50,6 +51,7 @@ impl Ls {
             a_flag: false,
             f_flag: false,
             l_flag: false,
+            file_name: String::new(),
         }
     }
 
@@ -237,6 +239,7 @@ pub fn ls(tab: &[String], current_dir: &PathBuf) -> String {
                 'F' => ls.f_flag = true,
                 'l' => ls.l_flag = true,
                 _ => {
+                    ls.file_name = flag.to_string();
                     target_dir_str.push(flag);
                     break;
                 }
@@ -244,15 +247,29 @@ pub fn ls(tab: &[String], current_dir: &PathBuf) -> String {
         }
     }
 
-    // read directory content
     let entries_result = fs::read_dir(&target_dir_str);
     match entries_result {
         Ok(entries) => return ls.myls(entries),
-        Err(_) => {
-            return format!(
-                "ls: cannot access '{}': No such file or directory",
-                &target_dir_str.to_string_lossy()
-            );
+        Err(err) => {
+            let error_message = match err.kind() {
+                ErrorKind::NotFound => format!(
+                    "ls: cannot access '{}': No such file or directory",
+                    &target_dir_str.to_string_lossy()
+                ),
+                ErrorKind::PermissionDenied => format!(
+                    "ls: cannot open directory '{}': Permission denied",
+                    &target_dir_str.to_string_lossy()
+                ),
+                ErrorKind::NotADirectory => { 
+                    format!("{}", ls.file_name)
+                }
+                _ => format!(
+                    "ls: cannot access '{}': {}",
+                    &target_dir_str.to_string_lossy(),
+                    err.to_string()
+                ),
+            };
+            return error_message;
         }
     }
 }
