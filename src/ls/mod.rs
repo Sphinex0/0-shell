@@ -122,7 +122,6 @@ impl ls {
                 }
             }
 
-            
             if !self.a_flag && file.hidden {
                 continue;
             }
@@ -132,10 +131,12 @@ impl ls {
 
         self.files
             .sort_by(|a, b| match (a.name.as_str(), b.name.as_str()) {
-                (".", "./") | ("../", "../") | (".", ".") | ("..", "..") => std::cmp::Ordering::Equal,
+                (".", "./") | ("../", "../") | (".", ".") | ("..", "..") => {
+                    std::cmp::Ordering::Equal
+                }
                 ("./", _) | (".", _) => std::cmp::Ordering::Less,
                 (_, "./") | (_, ".") => std::cmp::Ordering::Greater,
-                ("../", _)| ("..", _) => std::cmp::Ordering::Less,
+                ("../", _) | ("..", _) => std::cmp::Ordering::Less,
                 (_, "../") | (_, "..") => std::cmp::Ordering::Greater,
                 _ => a.name.cmp(&b.name),
             });
@@ -211,7 +212,7 @@ impl ls {
             }
         }
 
-        let mut total_lines= String::new();
+        let mut total_lines = String::new();
         if self.l_flag {
             total_lines = format!("total {}\n ", (total_blocks + 1) / 2);
         }
@@ -305,6 +306,8 @@ fn get_usr(metadata: &Metadata) -> Option<User> {
 
 fn get_grp(metadata: &Metadata) -> Group {
     let gid = metadata.gid();
-    let grp = get_group_by_gid(gid).unwrap_or(Group::new(gid, "root"));
-    grp
+    match get_group_by_gid(gid) {
+        Some(group) => group,
+        None => get_group_by_gid(0).unwrap_or(Group::new(gid, "root")),
+    }
 }
