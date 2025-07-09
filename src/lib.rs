@@ -19,16 +19,24 @@ pub use mv::*;
 pub use pwd::*;
 pub use rm::*;
 
+<<<<<<< HEAD
 #[derive(Debug, PartialEq, Clone)]
 pub enum CommandPart {
     String(String),        // A literal string, e.g., "hello"
     Substitution(Command), // A nested command, e.g., `echo d`
 }
+=======
+
+>>>>>>> cdcef777dd12f388bd9bb38da800cd9060b03a76
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Command {
     pub name: String,           // The command name, e.g., "echo"
+<<<<<<< HEAD
     pub args: Vec<CommandPart>, // List of arguments (strings or substitutions)
+=======
+    pub args: Vec<String>, // List of arguments (strings or substitutions)
+>>>>>>> cdcef777dd12f388bd9bb38da800cd9060b03a76
 }
 
 impl Command {
@@ -39,12 +47,18 @@ impl Command {
         if self.name.is_empty() {
             self.name = word.clone();
         } else {
+<<<<<<< HEAD
             self.args.push(CommandPart::String(word.clone()));
         }
     }
     pub fn add_argument(&mut self, word: &Command) {
         self.args.push(CommandPart::Substitution(word.clone()));
     }
+=======
+            self.args.push(word.clone());
+        }
+    }
+>>>>>>> cdcef777dd12f388bd9bb38da800cd9060b03a76
 }
 
 pub trait CostumSplit {
@@ -61,8 +75,11 @@ impl CostumSplit for String {
         let mut word = String::new();
         let mut state = State::Normal;
         let mut open_backslash = false;
+<<<<<<< HEAD
         let mut open_backtick = false;
         let mut backtick_str = String::new();
+=======
+>>>>>>> cdcef777dd12f388bd9bb38da800cd9060b03a76
 
         #[derive(Debug, PartialEq)]
         enum State {
@@ -73,9 +90,13 @@ impl CostumSplit for String {
 
         let chs = self.split("\n").collect::<Vec<_>>();
         for (i, line) in chs.iter().enumerate() {
+<<<<<<< HEAD
             if open_backtick {
                 backtick_str.push('\n');
             }
+=======
+
+>>>>>>> cdcef777dd12f388bd9bb38da800cd9060b03a76
             if matches!(state, State::DoubleQuote | State::SingleQuote) {
                 word.push('\n');
             }
@@ -86,14 +107,23 @@ impl CostumSplit for String {
             while let Some(ch) = chars.next() {
                 match state {
                     State::Normal => {
+<<<<<<< HEAD
                         if open_backtick && ch != '`' {
                             backtick_str.push(ch);
+=======
+                        if ch == '\\' && !open_backslash {
+                            open_backslash = true;
+>>>>>>> cdcef777dd12f388bd9bb38da800cd9060b03a76
                         } else if ch.is_whitespace() && !open_backslash {
                             command.add_string(&word);
 
                             let le = command.args.len();
                             if le > 0
+<<<<<<< HEAD
                                 && command.args[le - 1] != CommandPart::String(" ".to_string())
+=======
+                                && command.args[le - 1] != " ".to_string()
+>>>>>>> cdcef777dd12f388bd9bb38da800cd9060b03a76
                             {
                                 command.add_string(&" ".to_string());
                             }
@@ -103,6 +133,7 @@ impl CostumSplit for String {
                             state = State::DoubleQuote;
                         } else if ch == '\'' && !open_backslash {
                             state = State::SingleQuote;
+<<<<<<< HEAD
                         } else if ch == '`' && !open_backslash && !open_backtick {
                             command.add_string(&word);
                             word.clear();
@@ -116,6 +147,8 @@ impl CostumSplit for String {
                             open_backtick = false;
                         } else if ch == '\\' {
                             open_backslash = true;
+=======
+>>>>>>> cdcef777dd12f388bd9bb38da800cd9060b03a76
                         } else {
                             if open_backslash {
                                 word.push(ch);
@@ -126,6 +159,7 @@ impl CostumSplit for String {
                         }
                     }
                     State::DoubleQuote => {
+<<<<<<< HEAD
                         if open_backtick && ch != '`' {
                             backtick_str.push(ch);
                         } else if ch == '"' && !open_backslash {
@@ -156,6 +190,24 @@ impl CostumSplit for String {
                             } else {
                                 word.push(ch);
                             }
+=======
+                         if ch == '"' && !open_backslash {
+                            state = State::Normal;
+                        } else if ch == '\\' && !open_backslash {
+                            open_backslash = true;
+                        }else {
+                                if open_backslash {
+                                    if ['"', '\\', '`', '$'].contains(&ch) {
+                                        word.push(ch);
+                                    } else {
+                                        word.push('\\');
+                                        word.push(ch);
+                                    }
+                                    open_backslash = false;
+                                } else {
+                                    word.push(ch);
+                                }
+>>>>>>> cdcef777dd12f388bd9bb38da800cd9060b03a76
                         }
                     }
                     State::SingleQuote => {
@@ -174,8 +226,12 @@ impl CostumSplit for String {
         }
 
         let open = matches!(state, State::DoubleQuote | State::SingleQuote)
+<<<<<<< HEAD
             || open_backslash
             || open_backtick;
+=======
+            || open_backslash;
+>>>>>>> cdcef777dd12f388bd9bb38da800cd9060b03a76
         (command, open)
     }
 }
