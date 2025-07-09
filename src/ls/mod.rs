@@ -150,15 +150,21 @@ impl Ls {
         }
 
         self.files
-            .sort_by(|a, b| match (a.name.as_str(), b.name.as_str()) {
-                (".", "./") | ("../", "../") | (".", ".") | ("..", "..") => {
-                    std::cmp::Ordering::Equal
-                }
-                ("./", _) | (".", _) => std::cmp::Ordering::Less,
-                (_, "./") | (_, ".") => std::cmp::Ordering::Greater,
-                ("../", _) | ("..", _) => std::cmp::Ordering::Less,
-                (_, "../") | (_, "..") => std::cmp::Ordering::Greater,
-                _ => a.name.cmp(&b.name),
+            .sort_by(|a, b| 
+                // match (a.name, b.name)
+                 {
+                // (".", "./") | ("../", "../") | (".", ".") | ("..", "..") => {
+                //     std::cmp::Ordering::Equal
+                // }
+                // ("./", _) | (".", _) => std::cmp::Ordering::Less,
+                // (_, "./") | (_, ".") => std::cmp::Ordering::Greater,
+                // ("../", _) | ("..", _) => std::cmp::Ordering::Less,
+                // (_, "../") | (_, "..") => std::cmp::Ordering::Greater,
+                // _ => 
+                let a_tmp = a.name.chars().filter(|ch|ch.is_alphabetic()).collect::<String>();
+                let b_tmp = b.name.chars().filter(|ch|ch.is_alphabetic()).collect::<String>();
+                println!("aa {a_tmp}");
+                a_tmp.to_ascii_lowercase().as_bytes().cmp(&b_tmp.to_ascii_lowercase().as_bytes())
             });
 
         let mut res = Vec::new();
