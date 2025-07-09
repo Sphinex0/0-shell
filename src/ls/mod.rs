@@ -17,6 +17,7 @@ struct Fileinfo {
     group: String,
     metadata: Metadata,
 }
+
 impl Fileinfo {
     fn new(metadata: Metadata) -> Self {
         Self {
@@ -39,6 +40,7 @@ struct Ls {
     f_flag: bool,
     l_flag: bool,
 }
+
 impl Ls {
     fn new(prev_dir: &PathBuf, cur_dir: &PathBuf) -> Self {
         Self {
