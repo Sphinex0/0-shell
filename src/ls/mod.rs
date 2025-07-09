@@ -145,8 +145,9 @@ impl Ls {
             });
 
         let mut res = Vec::new();
+        let le  = self.files.len() ;
 
-        for file in &mut self.files {
+        for (i, file) in  self.files.iter_mut().enumerate() {
             // Skip hidden files if -a is not set
             if !self.a_flag && file.hidden {
                 continue;
@@ -199,7 +200,7 @@ impl Ls {
                 let formatted_time = datetime.format("%b %e %H:%M").to_string();
 
                 res.push(format!(
-                    "{type_char}{perms} {hardlink:2} {:<width_user$} {:<width_grp$} {:>width_size$} {} {}\n",
+                    "{type_char}{perms} {hardlink:2} {:<width_user$} {:<width_grp$} {:>width_size$} {} {}{newline}",
                     file.user,
                     file.group,
                     file_size,
@@ -207,7 +208,8 @@ impl Ls {
                     file.name,
                     width_user = max_user,
                     width_grp = max_group,
-                    width_size = max_size
+                    width_size = max_size,
+                    newline  = if i == le - 1 {"\n"} else {""},
                 ));
                 continue;
             } else {
@@ -263,7 +265,7 @@ pub fn ls(tab: &[String], current_dir: &PathBuf) -> String {
         match fs::read_dir(&dir) {
             Ok(entries) => {
                 output.push_str(&ls.myls(entries));
-                if i != files.len()-1 {
+                if i != files.len() - 1 {
                     output.push_str("\n");
                 }
             }
@@ -277,8 +279,13 @@ pub fn ls(tab: &[String], current_dir: &PathBuf) -> String {
                         "ls: cannot open directory '{}': Permission denied",
                         dir.to_string_lossy()
                     ),
-                    ErrorKind::NotADirectory => format!("{}", file_name),
-                    _ => format!("ls: cannot access '{}': {}", dir.to_string_lossy(), err),
+                    ErrorKind::NotADirectory => {
+                        // if ls.a_flag || ls.f_flag || ls.l_flag {
+                        //     ls.myls(entrie)
+                        // }
+                        format!("{}", file_name)
+                    }
+                    _ => format!("ls: cannot access '{}': {}", file_name, err),
                 };
                 output.push_str(&error_message);
             }
