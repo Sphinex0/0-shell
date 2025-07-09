@@ -1,7 +1,6 @@
 use chrono::{DateTime, Local};
 use std::fs;
 use std::fs::Metadata;
-use std::fs::*;
 use std::fs::{Permissions, ReadDir};
 use std::os::unix::fs::FileTypeExt;
 use std::os::unix::fs::MetadataExt;
@@ -32,7 +31,7 @@ impl Fileinfo {
 }
 
 #[derive(Debug)]
-struct ls {
+struct Ls {
     files: Vec<Fileinfo>,
     cur_dir: PathBuf,
     prev_dir: PathBuf,
@@ -40,7 +39,7 @@ struct ls {
     f_flag: bool,
     l_flag: bool,
 }
-impl ls {
+impl Ls {
     fn new(prev_dir: &PathBuf, cur_dir: &PathBuf) -> Self {
         Self {
             files: vec![],
@@ -224,7 +223,7 @@ pub fn ls(tab: &[String], current_dir: &PathBuf) -> String {
     let mut target_dir_str = current_dir.clone();
     let mut prev_dir = current_dir.clone();
     prev_dir.push("/..");
-    let mut ls = ls::new(&prev_dir, current_dir);
+    let mut ls = Ls::new(&prev_dir, current_dir);
 
     for flag in tab {
         for (i, f) in flag.chars().enumerate() {
