@@ -1,12 +1,14 @@
 use chrono::{DateTime, Local};
-use std::fs;
+use std::fs::DirEntry;
 use std::fs::Metadata;
+use std::fs::{self, read_dir};
 use std::fs::{Permissions, ReadDir};
 use std::io::ErrorKind;
 use std::os::unix::fs::FileTypeExt;
 use std::os::unix::fs::MetadataExt;
 use std::os::unix::fs::PermissionsExt;
 use std::path::*;
+use std::path::{Path, PathBuf};
 use users::*;
 
 #[derive(Debug)]
@@ -41,6 +43,7 @@ struct Ls {
     f_flag: bool,
     l_flag: bool,
     files_names: Vec<String>,
+    is_file: bool,
 }
 impl Ls {
     fn new(prev_dir: &PathBuf, cur_dir: &PathBuf) -> Self {
@@ -52,6 +55,7 @@ impl Ls {
             f_flag: false,
             l_flag: false,
             files_names: Vec::new(),
+            is_file: false,
         }
     }
 
@@ -83,18 +87,19 @@ impl Ls {
         }
     }
 
-    fn myls(&mut self, entries: ReadDir) -> String {
+    fn myls(&mut self, entries: Vec<DirEntry>) -> String {
         let mut max_user = 0;
         let mut max_group = 0;
         let mut max_size = 0;
         let mut total_blocks = 0;
 
         self.files.clear();
+        if self.a_flag && !self.is_file {
+            self.files.push(self.get("."));
+            self.files.push(self.get(".."));
+        }
 
-        self.files.push(self.get("."));
-        self.files.push(self.get(".."));
-
-        for entry in entries.flatten() {
+        for entry in entries {
             let metadata = entry.metadata().unwrap();
 
             let mut file = Fileinfo::new(metadata);
@@ -145,9 +150,9 @@ impl Ls {
             });
 
         let mut res = Vec::new();
-        let le  = self.files.len() ;
+        let le = self.files.len();
 
-        for (i, file) in  self.files.iter_mut().enumerate() {
+        for (i, file) in self.files.iter_mut().enumerate() {
             // Skip hidden files if -a is not set
             if !self.a_flag && file.hidden {
                 continue;
@@ -218,8 +223,8 @@ impl Ls {
         }
 
         let mut total_lines = String::new();
-        if self.l_flag {
-            total_lines = format!("total {}\n ", (total_blocks + 1) / 2);
+        if self.l_flag && !self.is_file {
+            total_lines = format!(" total {}\n ", (total_blocks + 1) / 2);
         }
         total_lines + &res.join(" ")
     }
@@ -264,7 +269,12 @@ pub fn ls(tab: &[String], current_dir: &PathBuf) -> String {
         }
         match fs::read_dir(&dir) {
             Ok(entries) => {
-                output.push_str(&ls.myls(entries));
+                // output.push_str(&ls.myls(entries));
+                // if i != files.len() - 1 {
+                //     output.push_str("\n");
+                // }
+                let filtered: Vec<_> = entries.filter_map(Result::ok).collect();
+                output.push_str(&ls.myls(filtered));
                 if i != files.len() - 1 {
                     output.push_str("\n");
                 }
@@ -280,10 +290,25 @@ pub fn ls(tab: &[String], current_dir: &PathBuf) -> String {
                         dir.to_string_lossy()
                     ),
                     ErrorKind::NotADirectory => {
-                        // if ls.a_flag || ls.f_flag || ls.l_flag {
-                        //     ls.myls(entrie)
-                        // }
-                        format!("{}", file_name)
+                        let temp_dir = dir.clone();
+                        let file_name = temp_dir.file_name().unwrap().to_str().unwrap();
+                        dir.pop();
+                        match fs::read_dir(&dir) {
+                            Ok(entries) => {
+                                let filtered: Vec<_> = entries
+                                    .filter_map(Result::ok)
+                                    .filter(|entry| entry.file_name() == file_name)
+                                    .collect();
+                                ls.is_file = true;
+                                output.push_str(&ls.myls(filtered));
+
+                                if i != files.len() - 1 {
+                                    output.push('\n');
+                                }
+                            }
+                            Err(_) => {}
+                        }
+                        format!("")
                     }
                     _ => format!("ls: cannot access '{}': {}", file_name, err),
                 };
@@ -347,6 +372,7 @@ fn get_usr(metadata: &Metadata) -> Option<User> {
 
 fn get_grp(metadata: &Metadata) -> Group {
     let gid = metadata.gid();
+
     match get_group_by_gid(gid) {
         Some(group) => group,
         None => get_group_by_gid(0).unwrap_or(Group::new(gid, "root")),
