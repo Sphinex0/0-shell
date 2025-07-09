@@ -19,6 +19,7 @@ struct Fileinfo {
     user: String,
     group: String,
     metadata: Metadata,
+    entry: Option<PathBuf>,
 }
 
 impl Fileinfo {
@@ -30,6 +31,7 @@ impl Fileinfo {
             user: String::new(),
             group: String::new(),
             metadata,
+            entry: None,
         }
     }
 }
@@ -84,6 +86,7 @@ impl Ls {
             user: String::new(),
             group: String::new(),
             metadata,
+            entry: None,
         }
     }
 
@@ -106,6 +109,7 @@ impl Ls {
 
             let name = entry.file_name().to_string_lossy().into_owned();
             file.name = name.clone();
+            file.entry = Some(entry.path().clone());
 
             if name.starts_with('.') {
                 file.trimed_name = trime_dots(name.clone());
@@ -123,7 +127,15 @@ impl Ls {
                 let path = entry.path();
                 if file_type.is_dir() {
                     file.name.push('/');
-                } else if file_type.is_symlink() {
+                } else if entry.path().is_symlink() {
+                    // get_symlink_target_name(entry.path());
+
+                    // match get_symlink_target_name(entry.path()) {
+                    //     Ok(target_name) => {
+                    //         result.push_str(&format!("{} -> {}\n", name, target_name))
+                    //     }
+                    //     Err(_) => result.push_str(&format!("{}\n", name)),
+                    // }
                     file.name.push('@');
                 } else if file_type.is_file() && is_executable(&path) {
                     file.name.push('*');
@@ -181,6 +193,12 @@ impl Ls {
                 let type_char = if file_type.is_dir() {
                     'd'
                 } else if file_type.is_symlink() {
+                    if let Some(en) = &file.entry {
+                        if let Ok(target_name) = get_symlink_target_name((en)) {
+                            file.name = format!("{} -> {}\n", file.name, target_name);
+                        }
+                    }
+
                     'l'
                 } else if file_type.is_socket() {
                     's'
@@ -269,10 +287,6 @@ pub fn ls(tab: &[String], current_dir: &PathBuf) -> String {
         }
         match fs::read_dir(&dir) {
             Ok(entries) => {
-                // output.push_str(&ls.myls(entries));
-                // if i != files.len() - 1 {
-                //     output.push_str("\n");
-                // }
                 let filtered: Vec<_> = entries.filter_map(Result::ok).collect();
                 output.push_str(&ls.myls(filtered));
                 if i != files.len() - 1 {
@@ -377,4 +391,38 @@ fn get_grp(metadata: &Metadata) -> Group {
         Some(group) => group,
         None => get_group_by_gid(0).unwrap_or(Group::new(gid, "root")),
     }
+}
+
+fn get_symlink_target_name<P: AsRef<Path>>(symlink_path: P) -> Result<String, String> {
+    // Read the target path of the symlink
+    let target_path = match fs::read_link(&symlink_path) {
+        Ok(path) => path,
+        Err(err) => {
+            return Err(format!(
+                "Failed to read symlink '{}': {}",
+                symlink_path.as_ref().display(),
+                err
+            ));
+        }
+    };
+
+    // Get the file name from the target path
+    let target_name = match target_path.file_name() {
+        Some(name) => name,
+        None => {
+            return Err(format!(
+                "Symlink '{}' points to an invalid path: {}",
+                symlink_path.as_ref().display(),
+                target_path.display()
+            ));
+        }
+    };
+
+    // Convert OsStr to String
+    target_name.to_str().map(String::from).ok_or_else(|| {
+        format!(
+            "Symlink target name '{}' is not valid UTF-8",
+            target_path.display()
+        )
+    })
 }
