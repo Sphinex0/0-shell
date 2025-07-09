@@ -61,6 +61,17 @@ fn main() {
     ctrlc::set_handler(move || tx.send(()).expect("Could not send signal on channel."))
         .expect("Error setting Ctrl-C handler");
 
+    println!(
+    "\x1b[1;31m
+     ██████╗     ███████╗██╗  ██╗███████╗██╗     ██╗     
+    ██╔═████╗    ██╔════╝██║  ██║██╔════╝██║     ██║     
+    ██║██╔██║    ███████╗███████║█████╗  ██║     ██║     
+    ████╔╝██║    ╚════██║██╔══██║██╔══╝  ██║     ██║     
+    ╚██████╔╝    ███████║██║  ██║███████╗███████╗███████╗
+    ╚═════╝     ╚══════╝╚═╝  ╚═╝╚══════╝╚══════╝╚══════╝
+
+    \x1b[1;0m");
+
     // set_current_dir(path)
     let mut history_current_dir = current_dir().unwrap();
     let mut current_dir = current_dir().unwrap();
