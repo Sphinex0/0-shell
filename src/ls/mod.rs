@@ -209,7 +209,7 @@ impl Ls {
                     width_user = max_user,
                     width_grp = max_group,
                     width_size = max_size,
-                    newline  = if i == le - 1 {"\n"} else {""},
+                    newline  = if i != le - 1 {"\n"} else {""},
                 ));
                 continue;
             } else {
