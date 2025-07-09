@@ -18,6 +18,7 @@ struct Fileinfo {
     group: String,
     metadata: Metadata,
 }
+
 impl Fileinfo {
     fn new(metadata: Metadata) -> Self {
         Self {
@@ -323,6 +324,8 @@ fn get_usr(metadata: &Metadata) -> Option<User> {
 
 fn get_grp(metadata: &Metadata) -> Group {
     let gid = metadata.gid();
-    let grp = get_group_by_gid(gid).unwrap_or(Group::new(gid, "root"));
-    grp
+    match get_group_by_gid(gid) {
+        Some(group) => group,
+        None => get_group_by_gid(0).unwrap_or(Group::new(gid, "root")),
+    }
 }
