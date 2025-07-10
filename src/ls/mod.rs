@@ -18,6 +18,7 @@ struct Fileinfo {
     group: String,
     metadata: Metadata,
     entry: Option<PathBuf>,
+    is_exec: bool,
 }
 
 impl Fileinfo {
@@ -29,6 +30,7 @@ impl Fileinfo {
             group: String::new(),
             metadata,
             entry: None,
+            is_exec: false,
         }
     }
 }
@@ -83,6 +85,7 @@ impl Ls {
             group: String::new(),
             metadata,
             entry: None,
+            is_exec: false,
         }
     }
 
@@ -98,7 +101,7 @@ impl Ls {
             self.files.push(self.get(".."));
         }
         let name = iana_time_zone::get_timezone().unwrap();
-        let tz = name.parse::<chrono_tz::Tz>() .unwrap() ;
+        let tz = name.parse::<chrono_tz::Tz>().unwrap();
 
         for entry in entries {
             let metadata = entry.metadata().unwrap();
@@ -113,6 +116,9 @@ impl Ls {
                 file.hidden = true;
             }
 
+            let path = entry.path();
+            file.is_exec = is_executable(&path);
+
             if self.f_flag {
                 let file_type = match entry.file_type() {
                     Ok(ft) => ft,
@@ -121,12 +127,11 @@ impl Ls {
                         continue;
                     }
                 };
-                let path = entry.path();
                 if file_type.is_dir() {
                     file.name.push('/');
                 } else if entry.path().is_symlink() && !self.l_flag {
                     file.name.push('@');
-                } else if file_type.is_file() && is_executable(&path) {
+                } else if file_type.is_file() && file.is_exec {
                     file.name.push('*');
                 }
             }
@@ -236,10 +241,20 @@ impl Ls {
                     width_grp = max_group,
                     width_size = max_size,
                     newline  = if i != le - 1 {"\n"} else {""},
+                
                 ));
                 continue;
             } else {
-                res.push(format!("{}", file.name));
+                let mut color = "\x1b[0m";
+                let meta = file.metadata.clone();
+                if meta.is_dir() {
+                    color = "\x1b[1;34m";
+                } else if meta.is_symlink() {
+                    color = "\x1b[1;36m";
+                } else if file.is_exec {
+                    color = "\x1b[1;32m";
+                }
+                res.push(format!("{}{}\x1b[0m", color, file.name));
             }
         }
 
