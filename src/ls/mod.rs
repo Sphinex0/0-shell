@@ -91,6 +91,7 @@ impl Ls {
         let mut max_group = 0;
         let mut max_size = 0;
         let mut total_blocks = 0;
+        let mut max_time_size = 0;
 
         self.files.clear();
         if self.a_flag && !self.is_file {
@@ -98,12 +99,27 @@ impl Ls {
             self.files.push(self.get(".."));
         }
         let name = iana_time_zone::get_timezone().unwrap();
-        let tz = name.parse::<chrono_tz::Tz>() .unwrap() ;
+        let tz = name.parse::<chrono_tz::Tz>().unwrap();
 
         for entry in entries {
             let metadata = entry.metadata().unwrap();
 
-            let mut file = Fileinfo::new(metadata);
+            let mut file = Fileinfo::new(metadata.clone());
+
+            // Get user and group info
+            let user = get_usr(&metadata).unwrap();
+            let grp = get_grp(&metadata);
+            file.user = user.name().to_str().unwrap().to_string();
+            file.group = grp.name().to_str().unwrap().to_string();
+            let last_mod_time = metadata.modified().unwrap();
+            let datetime: DateTime<Local> = last_mod_time.into();
+            let datetime = datetime.with_timezone(&tz);
+            let formatted_time = datetime.format("%b %e %H:%M").to_string();
+
+            max_user = max_user.max(file.user.len());
+            max_group = max_group.max(file.group.len());
+            max_size = max_size.max(file.metadata.len().to_string().len());
+            max_time_size = max_time_size.max(formatted_time.len());
 
             let name = entry.file_name().to_string_lossy().into_owned();
             file.name = name.clone();
@@ -169,16 +185,6 @@ impl Ls {
                 total_blocks += file.metadata.blocks();
             }
 
-            // Get user and group info
-            let user = get_usr(&file.metadata).unwrap();
-            let grp = get_grp(&file.metadata);
-            file.user = user.name().to_str().unwrap().to_string();
-            file.group = grp.name().to_str().unwrap().to_string();
-
-            max_user = max_user.max(file.user.len());
-            max_group = max_group.max(file.group.len());
-            max_size = max_size.max(file.metadata.len().to_string().len());
-
             if self.l_flag {
                 let permissions = file.metadata.permissions();
                 let file_type = file.metadata.file_type();
@@ -215,27 +221,25 @@ impl Ls {
                 } else {
                     '?'
                 };
-
-                let perms = format_permissions(&permissions);
-                let hardlink = file.metadata.nlink();
-                let file_size = file.metadata.len();
-
                 let last_mod_time = file.metadata.modified().unwrap();
                 let datetime: DateTime<Local> = last_mod_time.into();
                 let datetime = datetime.with_timezone(&tz);
                 let formatted_time = datetime.format("%b %e %H:%M").to_string();
-
+                let perms = format_permissions(&permissions);
+                let hardlink = file.metadata.nlink();
+                let file_size = file.metadata.len();
                 res.push(format!(
-                    "{type_char}{perms} {hardlink:2} {:<width_user$} {:<width_grp$} {:>width_size$} {} {}{newline}",
-                    file.user,
-                    file.group,
-                    file_size,
-                    formatted_time,
-                    file.name,
+                    "{type_char}{perms} {hardlink:2} {user:<width_user$} {group:>width_grp$} {size:>width_size$} {time:>width_time$} {name}{newline}",
+                    user = file.user,
+                    group = file.group,
+                    size = file_size,
+                    time = formatted_time,
+                    name = file.name,
                     width_user = max_user,
                     width_grp = max_group,
                     width_size = max_size,
-                    newline  = if i != le - 1 {"\n"} else {""},
+                    width_time = max_time_size,
+                    newline = if i != le - 1 { "\n" } else { "" },
                 ));
                 continue;
             } else {
