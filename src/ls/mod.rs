@@ -94,6 +94,7 @@ impl Ls {
         let mut max_group = 0;
         let mut max_size = 0;
         let mut total_blocks = 0;
+        let mut max_time_size = 0;
 
         self.files.clear();
         if self.a_flag && !self.is_file {
@@ -106,7 +107,22 @@ impl Ls {
         for entry in entries {
             let metadata = entry.metadata().unwrap();
 
-            let mut file = Fileinfo::new(metadata);
+            let mut file = Fileinfo::new(metadata.clone());
+
+            // Get user and group info
+            let user = get_usr(&metadata).unwrap();
+            let grp = get_grp(&metadata);
+            file.user = user.name().to_str().unwrap().to_string();
+            file.group = grp.name().to_str().unwrap().to_string();
+            let last_mod_time = metadata.modified().unwrap();
+            let datetime: DateTime<Local> = last_mod_time.into();
+            let datetime = datetime.with_timezone(&tz);
+            let formatted_time = datetime.format("%b %e %H:%M").to_string();
+
+            max_user = max_user.max(file.user.len());
+            max_group = max_group.max(file.group.len());
+            max_size = max_size.max(file.metadata.len().to_string().len());
+            max_time_size = max_time_size.max(formatted_time.len());
 
             let name = entry.file_name().to_string_lossy().into_owned();
             file.name = name.clone();
@@ -174,35 +190,41 @@ impl Ls {
                 total_blocks += file.metadata.blocks();
             }
 
-            // Get user and group info
-            let user = get_usr(&file.metadata).unwrap();
-            let grp = get_grp(&file.metadata);
-            file.user = user.name().to_str().unwrap().to_string();
-            file.group = grp.name().to_str().unwrap().to_string();
-
-            max_user = max_user.max(file.user.len());
-            max_group = max_group.max(file.group.len());
-            max_size = max_size.max(file.metadata.len().to_string().len());
-
             if self.l_flag {
                 let permissions = file.metadata.permissions();
                 let file_type = file.metadata.file_type();
 
+                let mut color = "\x1b[0m";
+                let meta = file.metadata.clone();
+                if file.is_exec {
+                    color = "\x1b[1;32m";
+                }
+
                 // Determine file type char like ls does
                 let type_char = if file_type.is_dir() {
+                    color = "\x1b[1;34m";
                     'd'
                 } else if file_type.is_symlink() {
+                    color = "\x1b[1;36m";
                     if let Some(en) = &file.entry {
                         if let Ok((meta, mut name)) = get_symlink_target_name(&en) {
+                            let mut color2 = "\x1b[0m";
+                            if meta.is_dir() {
+                                color2 = "\x1b[1;34m";
+                            } else if meta.is_file() && is_executable(&en) {
+                                color2 = "\x1b[1;32m";
+                            }
+
                             if self.f_flag {
                                 // let path = target_file.path();
                                 if meta.is_dir() {
+                                    color2 = "\x1b[1;34m";
                                     name.push('/');
                                 } else if meta.is_file() && is_executable(&en) {
                                     name.push('*');
                                 }
                             }
-                            file.name = format!("{} -> {}", file.name, name);
+                            file.name = format!("{}\x1b[0m -> {color2}{}\x1b[0m", file.name, name);
                         }
                     }
 
@@ -220,28 +242,26 @@ impl Ls {
                 } else {
                     '?'
                 };
-
-                let perms = format_permissions(&permissions);
-                let hardlink = file.metadata.nlink();
-                let file_size = file.metadata.len();
-
                 let last_mod_time = file.metadata.modified().unwrap();
                 let datetime: DateTime<Local> = last_mod_time.into();
                 let datetime = datetime.with_timezone(&tz);
                 let formatted_time = datetime.format("%b %e %H:%M").to_string();
+                let perms = format_permissions(&permissions);
+                let hardlink = file.metadata.nlink();
+                let file_size = file.metadata.len();
 
                 res.push(format!(
-                    "{type_char}{perms} {hardlink:2} {:<width_user$} {:<width_grp$} {:>width_size$} {} {}{newline}",
-                    file.user,
-                    file.group,
-                    file_size,
-                    formatted_time,
-                    file.name,
+                    "{type_char}{perms} {hardlink:2} {user:<width_user$} {group:>width_grp$} {size:>width_size$} {time:>width_time$} {color}{name}\x1b[0m{newline}",
+                    user = file.user,
+                    group = file.group,
+                    size = file_size,
+                    time = formatted_time,
+                    name = file.name,
                     width_user = max_user,
                     width_grp = max_group,
                     width_size = max_size,
-                    newline  = if i != le - 1 {"\n"} else {""},
-                
+                    width_time = max_time_size,
+                    newline = if i != le - 1 { "\n" } else { "" },
                 ));
                 continue;
             } else {
