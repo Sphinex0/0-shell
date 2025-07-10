@@ -128,14 +128,6 @@ impl Ls {
                 if file_type.is_dir() {
                     file.name.push('/');
                 } else if entry.path().is_symlink() {
-                    // get_symlink_target_name(entry.path());
-
-                    // match get_symlink_target_name(entry.path()) {
-                    //     Ok(target_name) => {
-                    //         result.push_str(&format!("{} -> {}\n", name, target_name))
-                    //     }
-                    //     Err(_) => result.push_str(&format!("{}\n", name)),
-                    // }
                     file.name.push('@');
                 } else if file_type.is_file() && is_executable(&path) {
                     file.name.push('*');
@@ -200,8 +192,16 @@ impl Ls {
                     'd'
                 } else if file_type.is_symlink() {
                     if let Some(en) = &file.entry {
-                        if let Ok(target_name) = get_symlink_target_name((en)) {
-                            file.name = format!("{} -> {}\n", file.name, target_name);
+                        if let Ok((meta,name)) =  get_symlink_target_name(&en){
+                            if self.f_flag {
+                                // let path = target_file.path();
+                                if meta.is_dir() {
+                                    file.name.push('/');
+                                } else if meta.is_file() && is_executable(&en) {
+                                    file.name.push('*');
+                                }
+                            }
+                            file.name = format!("{} -> {}", file.name, name);
                         }
                     }
 
@@ -399,8 +399,16 @@ fn get_grp(metadata: &Metadata) -> Group {
     }
 }
 
-fn get_symlink_target_name<P: AsRef<Path>>(symlink_path: P) -> Result<String, String> {
+fn get_symlink_target_name<P: AsRef<Path>>(symlink_path: P) -> Result<(Metadata,String), String> {
     // Read the target path of the symlink
+    let meta = match fs::metadata(&symlink_path) {
+        Ok(m) => m ,
+        Err(_) => {
+            return Err("error".to_string());
+        }
+    };
+
+
     let target_path = match fs::read_link(&symlink_path) {
         Ok(path) => path,
         Err(err) => {
@@ -425,10 +433,7 @@ fn get_symlink_target_name<P: AsRef<Path>>(symlink_path: P) -> Result<String, St
     };
 
     // Convert OsStr to String
-    target_name.to_str().map(String::from).ok_or_else(|| {
-        format!(
-            "Symlink target name '{}' is not valid UTF-8",
-            target_path.display()
-        )
-    })
+    let name = target_name.to_str().map(String::from).unwrap();
+
+    Ok((meta,name))
 }
