@@ -10,11 +10,14 @@ use std::os::unix::fs::PermissionsExt;
 use std::path::*;
 use std::path::{Path, PathBuf};
 use users::*;
+use chrono::{Utc};
+use std::time::SystemTime;
+//use std::fs;
+// use std::time::SystemTime;
 
 #[derive(Debug)]
 struct Fileinfo {
     name: String,
-    trimed_name: String,
     hidden: bool,
     user: String,
     group: String,
@@ -26,7 +29,6 @@ impl Fileinfo {
     fn new(metadata: Metadata) -> Self {
         Self {
             name: String::new(),
-            trimed_name: String::new(),
             hidden: false,
             user: String::new(),
             group: String::new(),
@@ -80,8 +82,7 @@ impl Ls {
         }
 
         Fileinfo {
-            name: path.to_string(),
-            trimed_name: ".".to_string(),
+            name,
             hidden: true,
             user: String::new(),
             group: String::new(),
@@ -112,7 +113,6 @@ impl Ls {
             file.entry = Some(entry.path().clone());
 
             if name.starts_with('.') {
-                file.trimed_name = trime_dots(name.clone());
                 file.hidden = true;
             }
 
@@ -127,7 +127,7 @@ impl Ls {
                 let path = entry.path();
                 if file_type.is_dir() {
                     file.name.push('/');
-                } else if entry.path().is_symlink() {
+                } else if entry.path().is_symlink() && !self.l_flag {
                     file.name.push('@');
                 } else if file_type.is_file() && is_executable(&path) {
                     file.name.push('*');
@@ -141,23 +141,22 @@ impl Ls {
             self.files.push(file);
         }
 
-        self.files
-            .sort_by(|a, b| 
-                // match (a.name, b.name)
-                 {
-                // (".", "./") | ("../", "../") | (".", ".") | ("..", "..") => {
-                //     std::cmp::Ordering::Equal
-                // }
-                // ("./", _) | (".", _) => std::cmp::Ordering::Less,
-                // (_, "./") | (_, ".") => std::cmp::Ordering::Greater,
-                // ("../", _) | ("..", _) => std::cmp::Ordering::Less,
-                // (_, "../") | (_, "..") => std::cmp::Ordering::Greater,
-                // _ => 
-                let a_tmp = a.name.chars().filter(|ch|ch.is_alphabetic()).collect::<String>();
-                let b_tmp = b.name.chars().filter(|ch|ch.is_alphabetic()).collect::<String>();
-                println!("aa {a_tmp}");
-                a_tmp.to_ascii_lowercase().as_bytes().cmp(&b_tmp.to_ascii_lowercase().as_bytes())
-            });
+        self.files.sort_by(|a, b| {
+            let a_tmp = a
+                .name
+                .chars()
+                .filter(|ch| ch.is_alphabetic())
+                .collect::<String>();
+            let b_tmp = b
+                .name
+                .chars()
+                .filter(|ch| ch.is_alphabetic())
+                .collect::<String>();
+            a_tmp
+                .to_ascii_lowercase()
+                .as_bytes()
+                .cmp(&b_tmp.to_ascii_lowercase().as_bytes())
+        });
 
         let mut res = Vec::new();
         let le = self.files.len();
@@ -192,13 +191,13 @@ impl Ls {
                     'd'
                 } else if file_type.is_symlink() {
                     if let Some(en) = &file.entry {
-                        if let Ok((meta,name)) =  get_symlink_target_name(&en){
+                        if let Ok((meta, mut name)) = get_symlink_target_name(&en) {
                             if self.f_flag {
                                 // let path = target_file.path();
                                 if meta.is_dir() {
-                                    file.name.push('/');
+                                    name.push('/');
                                 } else if meta.is_file() && is_executable(&en) {
-                                    file.name.push('*');
+                                    name.push('*');
                                 }
                             }
                             file.name = format!("{} -> {}", file.name, name);
@@ -224,8 +223,12 @@ impl Ls {
                 let hardlink = file.metadata.nlink();
                 let file_size = file.metadata.len();
 
-                let last_mod_time = file.metadata.modified().unwrap();
-                let datetime: DateTime<Local> = last_mod_time.into();
+                let sys_time = SystemTime::now();
+                let datetime_local: DateTime<Local> = DateTime::<Local>::from(sys_time);
+                let datetime_utc: DateTime<Utc> = DateTime::<Utc>::from(sys_time);
+
+                let last_mod_time: SystemTime = file.metadata.modified().unwrap();
+                let datetime: DateTime<Local> = DateTime::<Local>::from(last_mod_time);
                 let formatted_time = datetime.format("%b %e %H:%M").to_string();
 
                 res.push(format!(
@@ -248,7 +251,7 @@ impl Ls {
 
         let mut total_lines = String::new();
         if self.l_flag && !self.is_file {
-            total_lines = format!(" l_flagtotal {}\n ", (total_blocks + 1) / 2);
+            total_lines = format!("total {}\n ", (total_blocks + 1) / 2);
         }
         total_lines + &res.join(" ")
     }
@@ -343,16 +346,6 @@ pub fn ls(tab: &[String], current_dir: &PathBuf) -> String {
 }
 
 // helpers
-fn trime_dots(name: String) -> String {
-    for (i, char) in name.chars().enumerate() {
-        if char == ' ' {
-            continue;
-        }
-        return name[i..].to_string();
-    }
-    return "".to_string();
-}
-
 fn is_executable(path: &Path) -> bool {
     if let Ok(metadata) = fs::metadata(path) {
         let mode = metadata.permissions().mode();
@@ -399,15 +392,14 @@ fn get_grp(metadata: &Metadata) -> Group {
     }
 }
 
-fn get_symlink_target_name<P: AsRef<Path>>(symlink_path: P) -> Result<(Metadata,String), String> {
+fn get_symlink_target_name<P: AsRef<Path>>(symlink_path: P) -> Result<(Metadata, String), String> {
     // Read the target path of the symlink
     let meta = match fs::metadata(&symlink_path) {
-        Ok(m) => m ,
+        Ok(m) => m,
         Err(_) => {
             return Err("error".to_string());
         }
     };
-
 
     let target_path = match fs::read_link(&symlink_path) {
         Ok(path) => path,
@@ -435,5 +427,5 @@ fn get_symlink_target_name<P: AsRef<Path>>(symlink_path: P) -> Result<(Metadata,
     // Convert OsStr to String
     let name = target_name.to_str().map(String::from).unwrap();
 
-    Ok((meta,name))
+    Ok((meta, name))
 }
