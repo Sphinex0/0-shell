@@ -10,10 +10,8 @@ use std::os::unix::fs::PermissionsExt;
 use std::path::*;
 use std::path::{Path, PathBuf};
 use users::*;
-use chrono::{Utc};
-use std::time::SystemTime;
 //use std::fs;
-// use std::time::SystemTime;
+use std::time::SystemTime;
 
 #[derive(Debug)]
 struct Fileinfo {
@@ -223,13 +221,14 @@ impl Ls {
                 let hardlink = file.metadata.nlink();
                 let file_size = file.metadata.len();
 
+                // let last_mod_time = file.metadata.modified().unwrap();
+                // let datetime: DateTime<Local> = last_mod_time.into();
+                // let formatted_time = datetime.format("%b %e %H:%M").to_string();
+
                 let sys_time = SystemTime::now();
                 let datetime_local: DateTime<Local> = DateTime::<Local>::from(sys_time);
-                let datetime_utc: DateTime<Utc> = DateTime::<Utc>::from(sys_time);
-
-                let last_mod_time: SystemTime = file.metadata.modified().unwrap();
-                let datetime: DateTime<Local> = DateTime::<Local>::from(last_mod_time);
-                let formatted_time = datetime.format("%b %e %H:%M").to_string();
+                 let formatted_time = datetime_local.format("%b %e %H:%M").to_string();
+                // let datetime_utc: DateTime<Utc> = DateTime::<Utc>::from(sys_time);
 
                 res.push(format!(
                     "{type_char}{perms} {hardlink:2} {:<width_user$} {:<width_grp$} {:>width_size$} {} {}{newline}",
@@ -251,7 +250,7 @@ impl Ls {
 
         let mut total_lines = String::new();
         if self.l_flag && !self.is_file {
-            total_lines = format!("total {}\n ", (total_blocks + 1) / 2);
+            total_lines = format!(" l_flagtotal {}\n ", (total_blocks + 1) / 2);
         }
         total_lines + &res.join(" ")
     }
