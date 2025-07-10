@@ -1,3 +1,4 @@
+use chrono::Datelike;
 use chrono::{DateTime, Local};
 use std::fs;
 use std::fs::DirEntry;
@@ -230,8 +231,10 @@ impl Ls {
                                         format!("{}\x1b[0m -> {color2}{}\x1b[0m", file.name, name);
                                 }
                                 Err(_) => {
-                                    file.name =
-                                        format!("{}\x1b[0m -> \x1b[1;31m{}\x1b[0m", file.name, name);
+                                    file.name = format!(
+                                        "\x1b[1;31m{}\x1b[0m -> \x1b[1;31m{}\x1b[0m",
+                                        file.name, name
+                                    );
                                 }
                             }
                         }
@@ -251,16 +254,25 @@ impl Ls {
                 } else {
                     '?'
                 };
+
                 let last_mod_time = file.metadata.modified().unwrap();
                 let datetime: DateTime<Local> = last_mod_time.into();
                 let datetime = datetime.with_timezone(&tz);
-                let formatted_time = datetime.format("%b %e %H:%M").to_string();
+
+                let mut formatted_time = datetime.format("%b %e %H:%M").to_string();
+
+                let current_year = Local::now().year();
+                let its_year = datetime.year();
+                if current_year != its_year {
+                    formatted_time = datetime.format("%b %e  %Y").to_string();
+                }
+
                 let perms = format_permissions(&permissions);
                 let hardlink = file.metadata.nlink();
                 let file_size = file.metadata.len();
 
                 res.push(format!(
-                    "{type_char}{perms} {hardlink:2} {user:<width_user$} {group:>width_grp$} {size:>width_size$} {time:>width_time$} {color}{name}\x1b[0m{newline}",
+                    "{type_char}{perms} {hardlink:2} {user:<width_user$} {group:>width_grp$} {size:>width_size$} {time:>width_time$}  {color}{name}\x1b[0m{newline}",
                     user = file.user,
                     group = file.group,
                     size = file_size,
