@@ -2,6 +2,7 @@ use std::fs;
 use std::path::Path;
 
 pub fn mv(args: &[String]) {
+    dbg!(&args);
     if args.len() != 2 {
         eprintln!("mv: wrong number of arguments");
         return;

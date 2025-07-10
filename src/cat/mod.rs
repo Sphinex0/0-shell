@@ -7,7 +7,7 @@ pub fn cat(args: &[String], current_dir: &PathBuf) -> String {
     let mut action_done: bool = false;
 
     for arg in args {
-        let mut tmp = path_copy.clone();
+        let mut tmp: PathBuf = path_copy.clone();
         tmp.push(arg);
 
         match std::fs::read_to_string(tmp) {
