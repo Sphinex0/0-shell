@@ -207,24 +207,33 @@ impl Ls {
                 } else if file_type.is_symlink() {
                     color = "\x1b[1;36m";
                     if let Some(en) = &file.entry {
-                        if let Ok((meta, mut name)) = get_symlink_target_name(&en) {
-                            let mut color2 = "\x1b[0m";
-                            if meta.is_dir() {
-                                color2 = "\x1b[1;34m";
-                            } else if meta.is_file() && is_executable(&en) {
-                                color2 = "\x1b[1;32m";
-                            }
+                        if let Ok((meta_data, mut name)) = get_symlink_target_name(&en) {
+                            match meta_data {
+                                Ok(meta) => {
+                                    let mut color2 = "\x1b[0m";
+                                    if meta.is_dir() {
+                                        color2 = "\x1b[1;34m";
+                                    } else if meta.is_file() && is_executable(&en) {
+                                        color2 = "\x1b[1;32m";
+                                    }
 
-                            if self.f_flag {
-                                // let path = target_file.path();
-                                if meta.is_dir() {
-                                    color2 = "\x1b[1;34m";
-                                    name.push('/');
-                                } else if meta.is_file() && is_executable(&en) {
-                                    name.push('*');
+                                    if self.f_flag {
+                                        // let path = target_file.path();
+                                        if meta.is_dir() {
+                                            color2 = "\x1b[1;34m";
+                                            name.push('/');
+                                        } else if meta.is_file() && is_executable(&en) {
+                                            name.push('*');
+                                        }
+                                    }
+                                    file.name =
+                                        format!("{}\x1b[0m -> {color2}{}\x1b[0m", file.name, name);
+                                }
+                                Err(_) => {
+                                    file.name =
+                                        format!("{}\x1b[0m -> \x1b[1;31m{}\x1b[0m", file.name, name);
                                 }
                             }
-                            file.name = format!("{}\x1b[0m -> {color2}{}\x1b[0m", file.name, name);
                         }
                     }
 
@@ -421,14 +430,12 @@ fn get_grp(metadata: &Metadata) -> Group {
     }
 }
 
-fn get_symlink_target_name<P: AsRef<Path>>(symlink_path: P) -> Result<(Metadata, String), String> {
+fn get_symlink_target_name<P: AsRef<Path>>(
+    symlink_path: P,
+) -> Result<(Result<Metadata, std::io::Error>, String), String> {
     // Read the target path of the symlink
-    let meta = match fs::metadata(&symlink_path) {
-        Ok(m) => m,
-        Err(_) => {
-            return Err("error".to_string());
-        }
-    };
+    let meta: Result<Metadata, std::io::Error> = fs::metadata(&symlink_path);
+    println!("a");
 
     let target_path = match fs::read_link(&symlink_path) {
         Ok(path) => path,
