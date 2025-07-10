@@ -1,17 +1,14 @@
 use chrono::{DateTime, Local};
+use std::fs;
 use std::fs::DirEntry;
 use std::fs::Metadata;
-use std::fs::{self, read_dir};
-use std::fs::{Permissions, ReadDir};
+use std::fs::Permissions;
 use std::io::ErrorKind;
 use std::os::unix::fs::FileTypeExt;
 use std::os::unix::fs::MetadataExt;
 use std::os::unix::fs::PermissionsExt;
-use std::path::*;
 use std::path::{Path, PathBuf};
 use users::*;
-//use std::fs;
-use std::time::SystemTime;
 
 #[derive(Debug)]
 struct Fileinfo {
@@ -100,6 +97,8 @@ impl Ls {
             self.files.push(self.get("."));
             self.files.push(self.get(".."));
         }
+        let name = iana_time_zone::get_timezone().unwrap();
+        let tz = name.parse::<chrono_tz::Tz>() .unwrap() ;
 
         for entry in entries {
             let metadata = entry.metadata().unwrap();
@@ -139,13 +138,22 @@ impl Ls {
             self.files.push(file);
         }
 
-        self.files
-            .sort_by(|a, b| 
-                 {
-                let a_tmp = a.name.chars().filter(|ch|ch.is_alphabetic()).collect::<String>();
-                let b_tmp = b.name.chars().filter(|ch|ch.is_alphabetic()).collect::<String>();
-                a_tmp.to_ascii_lowercase().as_bytes().cmp(&b_tmp.to_ascii_lowercase().as_bytes())
-            });
+        self.files.sort_by(|a, b| {
+            let a_tmp = a
+                .name
+                .chars()
+                .filter(|ch| ch.is_alphabetic())
+                .collect::<String>();
+            let b_tmp = b
+                .name
+                .chars()
+                .filter(|ch| ch.is_alphabetic())
+                .collect::<String>();
+            a_tmp
+                .to_ascii_lowercase()
+                .as_bytes()
+                .cmp(&b_tmp.to_ascii_lowercase().as_bytes())
+        });
 
         let mut res = Vec::new();
         let le = self.files.len();
@@ -180,7 +188,7 @@ impl Ls {
                     'd'
                 } else if file_type.is_symlink() {
                     if let Some(en) = &file.entry {
-                        if let Ok((meta,mut name)) =  get_symlink_target_name(&en){
+                        if let Ok((meta, mut name)) = get_symlink_target_name(&en) {
                             if self.f_flag {
                                 // let path = target_file.path();
                                 if meta.is_dir() {
@@ -214,9 +222,9 @@ impl Ls {
 
                 let last_mod_time = file.metadata.modified().unwrap();
                 let datetime: DateTime<Local> = last_mod_time.into();
+                let datetime = datetime.with_timezone(&tz);
                 let formatted_time = datetime.format("%b %e %H:%M").to_string();
 
-                
                 res.push(format!(
                     "{type_char}{perms} {hardlink:2} {:<width_user$} {:<width_grp$} {:>width_size$} {} {}{newline}",
                     file.user,
@@ -244,7 +252,7 @@ impl Ls {
 }
 
 pub fn ls(tab: &[String], current_dir: &PathBuf) -> String {
-    let mut target_dir_str = current_dir.clone();
+    let target_dir_str = current_dir.clone();
     let mut prev_dir = current_dir.clone();
     prev_dir.push("..");
 
@@ -378,15 +386,14 @@ fn get_grp(metadata: &Metadata) -> Group {
     }
 }
 
-fn get_symlink_target_name<P: AsRef<Path>>(symlink_path: P) -> Result<(Metadata,String), String> {
+fn get_symlink_target_name<P: AsRef<Path>>(symlink_path: P) -> Result<(Metadata, String), String> {
     // Read the target path of the symlink
     let meta = match fs::metadata(&symlink_path) {
-        Ok(m) => m ,
+        Ok(m) => m,
         Err(_) => {
             return Err("error".to_string());
         }
     };
-
 
     let target_path = match fs::read_link(&symlink_path) {
         Ok(path) => path,
@@ -414,5 +421,5 @@ fn get_symlink_target_name<P: AsRef<Path>>(symlink_path: P) -> Result<(Metadata,
     // Convert OsStr to String
     let name = target_name.to_str().map(String::from).unwrap();
 
-    Ok((meta,name))
+    Ok((meta, name))
 }
