@@ -164,12 +164,12 @@ impl Ls {
             let a_tmp = a
                 .name
                 .chars()
-                .filter(|ch| ch.is_alphabetic())
+                .filter(|ch| ch.is_alphanumeric())
                 .collect::<String>();
             let b_tmp = b
                 .name
                 .chars()
-                .filter(|ch| ch.is_alphabetic())
+                .filter(|ch| ch.is_alphanumeric())
                 .collect::<String>();
             a_tmp
                 .to_ascii_lowercase()
@@ -196,7 +196,6 @@ impl Ls {
                 let file_type = file.metadata.file_type();
 
                 let mut color = "\x1b[0m";
-                let meta = file.metadata.clone();
                 if file.is_exec {
                     color = "\x1b[1;32m";
                 }
@@ -447,7 +446,6 @@ fn get_symlink_target_name<P: AsRef<Path>>(
 ) -> Result<(Result<Metadata, std::io::Error>, String), String> {
     // Read the target path of the symlink
     let meta: Result<Metadata, std::io::Error> = fs::metadata(&symlink_path);
-    println!("a");
 
     let target_path = match fs::read_link(&symlink_path) {
         Ok(path) => path,
