@@ -29,7 +29,13 @@ pub fn cd(tab: &[String], history: &mut PathBuf, current_di: &mut PathBuf, home:
 
     if change {
         history.push(current_di.clone());
-        current_di.push(current_dir().unwrap());
+        match current_dir() {
+            Ok(dir) => current_di.push(dir),
+            Err(err) => {
+                print_error(&err.to_string());
+                return 1;
+            }
+        }
         0
     } else {
         1
