@@ -3,41 +3,40 @@ use std::path::PathBuf;
 
 use crate::print_error;
 pub fn rm(args: &[String], current_dir: &PathBuf) {
-    let path_copy: &mut PathBuf = &mut current_dir.clone();
-    let mut action_done: bool = false;
+    let mut recursive = false;
+    let mut paths = vec![];
     for arg in args {
-        if arg != &"-r" {
-            let mut tmp = path_copy.clone();
-            let table = arg.split("/").collect::<Vec<_>>();
-            for p in table {
-                match p {
-                    "." => {}
-                    ".." => {
-                        tmp.pop();
-                    }
-                    _ => {
-                        tmp.push(p);
-                    }
-                }
-            }
-            // println!("{:?}",tmp);
-            match tmp.read_dir() {
-                Ok(_files) => {
-                    if let Err(err) = fs::remove_dir_all(tmp) {
-                        print_error(&format!("{arg}: {err}"));
-                    }
-                }
-                Err(_err) => {
-                    println!("{tmp:?}");
-                    if let Err(err) = fs::remove_file(tmp) {
-                        print_error(&format!("{arg}: {err}"));
-                    }
-                }
-            }
-            action_done = true;
+        if arg == "-r" {
+            recursive = true;
+        } else {
+            paths.push(arg);
         }
     }
-    if !action_done {
-        print_error("rm: missing operand")
+    if paths.is_empty() {
+        print_error("rm: missing operand");
+        return;
+    }
+    for arg in paths {
+        let mut tmp = current_dir.clone();
+        for part in arg.split('/') {
+            match part {
+                "." => {}
+                ".." => { tmp.pop(); }
+                _ => { tmp.push(part); }
+            }
+        }
+        if tmp.is_dir() {
+            if recursive {
+                if let Err(err) = fs::remove_dir_all(&tmp) {
+                    print_error(&format!("{arg}: {err}"));
+                }
+            } else {
+                print_error(&format!("rm: cannot remove '{arg}': Is a directory"));
+            }
+        } else {
+            if let Err(err) = fs::remove_file(&tmp) {
+                print_error(&format!("{arg}: {err}"));
+            }
+        }
     }
 }

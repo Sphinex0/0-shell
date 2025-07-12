@@ -8,12 +8,25 @@ exit
 
 team : mohamed, adnane
 cat //added reading multiple files
+===================================================================
 cp //-r err handling
+===================================================================
 mv //fixed mv and added moving multiple files/directorys to one source
+===================================================================
 rm (supporting -r)
+code removes directories even without -r flag
+rm without -r should fail when asked to remove a directory
+Error: current_dir.clone() ila makanch &mut clone dpathBuf
+use let mut tmp = current_dir.clone(); f3awt
+let path_copy: &mut PathBuf = &mut current_dir.clone(); 
+creates a temporary mutable reference why
+You don't handle the case where no argument is given except -r:
+This should show: rm: missing operand.
+===================================================================
 mkdir //improved mkdir now it suports absolute and relative paths
 you can test it with 
 mkdir /home/mouchkhi/Desktop/0-shell/tests/testing_absolute_path
+===================================================================
 
 
 handle spaces in names (using "")
