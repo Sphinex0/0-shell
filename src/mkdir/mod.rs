@@ -1,22 +1,23 @@
 use std::fs;
 use std::path::PathBuf;
-
 use crate::print_error;
 
 pub fn mkdir(args: &[String], current_dir: &PathBuf) {
-    let path_copy: &mut PathBuf = &mut current_dir.clone();
-    let mut action_done: bool = false;
+    if args.is_empty() {
+        print_error("mkdir: missing operand");
+        return;
+    }
 
     for arg in args {
-        let mut tmp = path_copy.clone();
-        tmp.push(arg);
+        let path = PathBuf::from(arg);
+        let target = if path.is_absolute() {
+            path
+        } else {
+            current_dir.join(path)
+        };
 
-        if let Err(err) = fs::create_dir(tmp) {
-            print_error(&format!("{arg}: {err}"));
+        if let Err(e) = fs::create_dir(&target) {
+            print_error(&format!("mkdir: cannot create directory '{}': {}", arg, e));
         }
-        action_done = true;
-    }
-    if !action_done {
-        print_error("mkdir: missing operand")
     }
 }

@@ -7,11 +7,13 @@ exit
 
 
 team : mohamed, adnane
-cat
-cp
-mv
+cat //added reading multiple files
+cp //-r err handling
+mv //fixed mv and added moving multiple files/directorys to one source
 rm (supporting -r)
-mkdir
+mkdir //improved mkdir now it suports absolute and relative paths
+you can test it with 
+mkdir /home/mouchkhi/Desktop/0-shell/tests/testing_absolute_path
 
 
 handle spaces in names (using "")
