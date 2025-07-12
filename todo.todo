@@ -1,6 +1,6 @@
 team : hamza, mustapha
 echo
-cd
+cd // todo 
 pwd
 ls (supporting -l, -a, -F)
 exit
@@ -9,7 +9,8 @@ exit
 team : mohamed, adnane
 cat //added reading multiple files
 ===================================================================
-cp //-r err handling
+cp //-r err handling 
+todo add multiple files
 ===================================================================
 mv //fixed mv and added moving multiple files/directorys to one source
 ===================================================================
