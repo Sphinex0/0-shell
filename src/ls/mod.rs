@@ -324,9 +324,9 @@ pub fn ls(tab: &[String], current_dir: &PathBuf) -> String {
                 }
             }
         } else {
-            if arg.trim().len() != 0 {
+            // if arg.trim().len() != 0 {
                 ls.files_names.push(arg.to_string());
-            }
+            // }
         }
     }
 

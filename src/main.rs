@@ -126,7 +126,7 @@ fn main() {
             continue;
         }
 
-        // println!("command => {:?}", command);
+        // println!("command => {:#?}", command);
 
         if open_quote {
             print_error("Syntax error: Unterminated quoted string");
