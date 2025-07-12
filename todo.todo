@@ -63,3 +63,8 @@ echo a `` b
  size terminal = 100
  words = 200/100
  2
+
+
+
+
+ cp when you cp a file into a non directory in the existing you create it
