@@ -8,22 +8,20 @@ pub fn cp(args: &[String]) {
     }
     let src = Path::new(&args[0]);
     let dst = Path::new(&args[1]);
+    if !src.exists() {
+        eprintln!("cp: cannot stat '{}': No such file or directory", src.display());
+        return;
+    }
     if src.is_dir() {
-        eprintln!("cp: '{}' is a directory", src.display());
+        eprintln!("cp: -r not specified; omitting directory '{}'", src.display());
         return;
     }
     let final_dst = if dst.is_dir() {
-        match src.file_name() {
-            Some(name) => dst.join(name),
-            None => {
-                eprintln!("cp: invalid file name");
-                return;
-            }
-        }
+        dst.join(src.file_name().unwrap_or_default())
     } else {
         dst.to_path_buf()
     };
-    if let Err(err) = fs::copy(src, final_dst) {
-        eprintln!("cp: {}: {}", src.display(), err);
+    if let Err(err) = fs::copy(src, &final_dst) {
+        eprintln!("cp: cannot copy '{}': {}", src.display(), err);
     }
 }

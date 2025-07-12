@@ -1,3 +1,3 @@
-loop over files and get there names withouth the point for hidden files (if flag a == true)
-add / or * (if F lag)
-add the rest permissions owner exc.. (if l true) 
+what to handle:
+contain unsafe shell characters
+Escaping quotes inside filenames properly.
