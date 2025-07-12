@@ -1,6 +1,5 @@
 use std::fs;
 use std::path::PathBuf;
-
 use crate::print_error;
 
 pub fn mkdir(args: &[String], current_dir: &PathBuf) {
@@ -10,11 +9,15 @@ pub fn mkdir(args: &[String], current_dir: &PathBuf) {
     }
 
     for arg in args {
-        let mut target = current_dir.clone();
-        target.push(arg);
+        let path = PathBuf::from(arg);
+        let target = if path.is_absolute() {
+            path
+        } else {
+            current_dir.join(path)
+        };
 
-        if let Err(err) = fs::create_dir(&target) {
-            print_error(&format!("mkdir: cannot create directory '{}': {}", arg, err));
+        if let Err(e) = fs::create_dir(&target) {
+            print_error(&format!("mkdir: cannot create directory '{}': {}", arg, e));
         }
     }
 }
