@@ -5,7 +5,6 @@ use std::fs::DirEntry;
 use std::fs::Metadata;
 use std::fs::Permissions;
 use std::io::ErrorKind;
-use std::ops::Index;
 use std::os::unix::fs::FileTypeExt;
 use std::os::unix::fs::MetadataExt;
 use std::os::unix::fs::PermissionsExt;
@@ -107,7 +106,6 @@ impl Ls {
         }
         let name = iana_time_zone::get_timezone().unwrap();
         let tz = name.parse::<chrono_tz::Tz>().unwrap();
-        let mut sum_of_words = 0;
 
         for entry in entries {
             let metadata = entry.metadata().unwrap();
@@ -140,7 +138,6 @@ impl Ls {
                     break;
                 }
             }
-            sum_of_words += file.name.len();
             max_name_size = max_name_size.max(file.name.len());
 
             file.entry = Some(entry.path().clone());
