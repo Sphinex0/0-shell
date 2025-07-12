@@ -19,6 +19,7 @@ pub use mv::*;
 pub use pwd::*;
 pub use rm::*;
 
+
 #[derive(Debug, PartialEq, Clone)]
 pub struct Command {
     pub name: String,      // The command name, e.g., "echo"

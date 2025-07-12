@@ -5,7 +5,7 @@ use std::{
 
 use crate::print_error;
 
-pub fn cd(tab: &[String], history: &mut PathBuf, current_di: &mut PathBuf, home: &PathBuf) {
+pub fn cd(tab: &[String], history: &mut PathBuf, current_di: &mut PathBuf, home: &PathBuf) -> i32 {
     let mut path = tab.get(0).unwrap_or(&home.display().to_string()).clone();
     let mut change = true;
     match path.as_str() {
@@ -30,5 +30,8 @@ pub fn cd(tab: &[String], history: &mut PathBuf, current_di: &mut PathBuf, home:
     if change {
         history.push(current_di.clone());
         current_di.push(current_dir().unwrap());
+        0
+    } else {
+        1
     }
 }
