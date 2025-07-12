@@ -1,11 +1,8 @@
 use std::fs;
 use std::path::Path;
 
-pub fn mv(raw_args: &[String]) {
-    let args: Vec<String> = raw_args.iter()
-        .filter(|s| !s.trim().is_empty())
-        .cloned()
-        .collect();
+pub fn mv(args: &[String]) {
+    dbg!(&args);
     if args.is_empty() {
         eprintln!("mv: missing file operand");
         return;
@@ -45,6 +42,7 @@ pub fn mv(raw_args: &[String]) {
         };
 
         if let Err(e) = fs::rename(src, &dst_path) {
+            eprintln!("mv: rename failed '{}': {}", src.display(), e);
             match fs::copy(src, &dst_path) {
                 Ok(_) => {
                     if let Err(e) = fs::remove_file(src) {

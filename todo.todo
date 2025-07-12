@@ -9,7 +9,7 @@ exit
 team : mohamed, adnane
 cat //added reading multiple files
 cp //-r err handling
-mv //
+mv //fixed mv and added moving multiple files/directorys to one source
 rm (supporting -r)
 mkdir
 
