@@ -5,10 +5,12 @@ use std::fs::DirEntry;
 use std::fs::Metadata;
 use std::fs::Permissions;
 use std::io::ErrorKind;
+use std::ops::Index;
 use std::os::unix::fs::FileTypeExt;
 use std::os::unix::fs::MetadataExt;
 use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
+use term_size::dimensions;
 use users::*;
 
 #[derive(Debug)]
@@ -96,6 +98,7 @@ impl Ls {
         let mut max_size = 0;
         let mut total_blocks = 0;
         let mut max_time_size = 0;
+        let mut max_name_size = 0;
 
         self.files.clear();
         if self.a_flag && !self.is_file {
@@ -104,6 +107,7 @@ impl Ls {
         }
         let name = iana_time_zone::get_timezone().unwrap();
         let tz = name.parse::<chrono_tz::Tz>().unwrap();
+        let mut sum_of_words = 0;
 
         for entry in entries {
             let metadata = entry.metadata().unwrap();
@@ -136,6 +140,8 @@ impl Ls {
                     break;
                 }
             }
+            sum_of_words += file.name.len();
+            max_name_size = max_name_size.max(file.name.len());
 
             file.entry = Some(entry.path().clone());
 
@@ -189,19 +195,31 @@ impl Ls {
 
         let mut res = Vec::new();
         let le = self.files.len();
+        let term_width = dimensions().map(|(w, _)| w).unwrap_or(80);
+        let col_width = max_name_size + 2; // Add padding for spacing
+        let total_width = le * col_width - 2; // Total width without last padding
+
+        // Determine number of rows and columns
+        let (num_cols, num_rows) = if total_width <= term_width {
+            // Single row if all files fit
+            (le, 1)
+        } else {
+            // Multiple columns based on terminal width
+            let num_cols = (term_width / col_width).max(1);
+            let num_rows = (le + num_cols - 1) / num_cols;
+            (num_cols, num_rows)
+        };
+
+        let mut matrix: Vec<Vec<String>> = vec![vec!["".to_string(); num_cols]; num_rows];
 
         for (i, file) in self.files.iter_mut().enumerate() {
-            // Skip hidden files if -a is not set
             if !self.a_flag && file.hidden {
                 continue;
             }
 
             if self.l_flag {
-                // Track total blocks
                 total_blocks += file.metadata.blocks();
-            }
 
-            if self.l_flag {
                 let permissions = file.metadata.permissions();
                 let file_type = file.metadata.file_type();
 
@@ -210,7 +228,6 @@ impl Ls {
                     color = "\x1b[1;32m";
                 }
 
-                // Determine file type char like ls does
                 let type_char = if file_type.is_dir() {
                     color = "\x1b[1;34m";
                     'd'
@@ -228,7 +245,6 @@ impl Ls {
                                     }
 
                                     if self.f_flag {
-                                        // let path = target_file.path();
                                         if meta.is_dir() {
                                             color2 = "\x1b[1;34m";
                                             name.push('/');
@@ -248,7 +264,6 @@ impl Ls {
                             }
                         }
                     }
-
                     'l'
                 } else if file_type.is_socket() {
                     's'
@@ -269,7 +284,6 @@ impl Ls {
                 let datetime = datetime.with_timezone(&tz);
 
                 let mut formatted_time = datetime.format("%b %e %H:%M").to_string();
-
                 let current_year = Local::now().year();
                 let its_year = datetime.year();
                 if current_year != its_year {
@@ -281,20 +295,23 @@ impl Ls {
                 let file_size = file.metadata.len();
 
                 res.push(format!(
-                    "{type_char}{perms} {hardlink:2} {user:<width_user$} {group:>width_grp$} {size:>width_size$} {time:>width_time$}  {color}{name}\x1b[0m{newline}",
-                    user = file.user,
-                    group = file.group,
-                    size = file_size,
-                    time = formatted_time,
-                    name = file.name,
-                    width_user = max_user,
-                    width_grp = max_group,
-                    width_size = max_size,
-                    width_time = max_time_size,
-                    newline = if i != le - 1 { "\n" } else { "" },
-                ));
+                "{type_char}{perms} {hardlink:2} {user:<width_user$} {group:>width_grp$} {size:>width_size$} {time:>width_time$}  {color}{name}\x1b[0m{newline}",
+                user = file.user,
+                group = file.group,
+                size = file_size,
+                time = formatted_time,
+                name = file.name,
+                width_user = max_user,
+                width_grp = max_group,
+                width_size = max_size,
+                width_time = max_time_size,
+                newline = if i != le - 1 { "\n" } else { "" },
+            ));
                 continue;
             } else {
+                let row = i % num_rows;
+                let col = i / num_rows;
+
                 let mut color = "\x1b[0m";
                 let meta = file.metadata.clone();
                 if meta.is_dir() {
@@ -304,15 +321,31 @@ impl Ls {
                 } else if file.is_exec {
                     color = "\x1b[1;32m";
                 }
-                res.push(format!("{}{}\x1b[0m", color, file.name));
+                let padded_name = if num_rows == 1 {
+                  format!("{} ", file.name)    
+                } else {
+                  format!("{:width$}", file.name, width = col_width)
+                };
+                matrix[row][col] = format!("{}{}\x1b[0m", color, padded_name);
             }
         }
 
         let mut total_lines = String::new();
         if self.l_flag && !self.is_file {
-            total_lines = format!(" total {}\n ", (total_blocks + 1) / 2);
+            total_lines = format!("total {}\n", (total_blocks + 1) / 2);
         }
-        total_lines + &res.join(" ")
+
+        if self.l_flag {
+            total_lines + &res.join("")
+        } else {
+            // Convert matrix to string, joining non-empty rows
+            matrix
+                .into_iter()
+                .filter(|row| row.iter().any(|s| !s.is_empty()))
+                .map(|row| row.join(""))
+                .collect::<Vec<_>>()
+                .join("\n")
+        }
     }
 }
 

@@ -12,3 +12,6 @@ ctrlc = "3.4"
 iana-time-zone = "0.1.63"
 
 chrono-tz = "0.8"
+term_size = "0.3.2"
+
+

@@ -43,3 +43,10 @@ echo a `` b
  `echo hr `
  echo `echo "d      f"`
  `echo \\\\`
+
+
+
+
+ size terminal = 100
+ words = 200/100
+ 2
