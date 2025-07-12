@@ -1,35 +1,30 @@
-use std::{fs, io::{self, stdin, Write}, path::PathBuf};
+use std::{fs, io::{self, BufRead}, path::PathBuf};
 use crate::print_error;
 
 pub fn cat(args: &[String], current_dir: &PathBuf) -> String {
-    let mut result = String::new();
-
     if args.is_empty() {
-        let mut line = String::new();
-        let stdin = stdin();
-        let mut stdout = io::stdout();
+        let stdin = io::stdin();
+        let mut result = String::new();
 
-        loop {
-            line.clear();
-            let read = stdin.read_line(&mut line).unwrap();
-            if read == 0 {
-                break;
-            }
+        for line_res in stdin.lock().lines() {
+            let line = match line_res {
+                Ok(l) => l,
+                Err(_) => break,
+            };
+            println!("{}", line);
             result.push_str(&line);
-            write!(stdout, "{}", line).unwrap();
-            stdout.flush().unwrap();
+            result.push('\n');
         }
-
-        return result;
-    }
-
-    for arg in args {
-        let path = current_dir.join(arg);
-        match fs::read_to_string(&path) {
-            Ok(content) => result.push_str(&content),
-            Err(e) => print_error(&format!("cat: {}: {}", arg, e)),
+        String::new()
+    } else {
+        let mut result = String::new();
+        for arg in args {
+            let path = current_dir.join(arg);
+            match fs::read_to_string(&path) {
+                Ok(content) => result.push_str(&content),
+                Err(e) => print_error(&format!("cat: {}: {}", arg, e)),
+            }
         }
+        result
     }
-
-    result
 }
