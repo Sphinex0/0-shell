@@ -7,9 +7,9 @@ exit
 
 
 team : mohamed, adnane
-cat
-cp
-mv
+cat //added reading multiple files
+cp //-r err handling
+mv //
 rm (supporting -r)
 mkdir
 

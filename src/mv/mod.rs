@@ -1,37 +1,70 @@
 use std::fs;
 use std::path::Path;
 
-pub fn mv(args: &[String]) {
-    dbg!(&args);
-    if args.len() != 2 {
-        eprintln!("mv: wrong number of arguments");
+pub fn mv(raw_args: &[String]) {
+    let args: Vec<String> = raw_args.iter()
+        .filter(|s| !s.trim().is_empty())
+        .cloned()
+        .collect();
+    if args.is_empty() {
+        eprintln!("mv: missing file operand");
         return;
     }
-    let src = Path::new(&args[0]);
-    let dst = Path::new(&args[1]);
-    let dst = if dst.is_dir() {
-        match src.file_name() {
-            Some(name) => dst.join(name),
-            None => {
-                eprintln!("mv: invalid file name");
-                return;
-            }
+    if args.len() == 1 {
+        eprintln!("mv: missing destination file operand after '{}'", args[0]);
+        return;
+    }
+    let last = Path::new(&args[args.len() - 1]);
+    let sources = &args[..args.len() - 1];
+    if sources.len() > 1 && !last.is_dir() {
+        eprintln!("mv: target '{}' is not a directory", last.display());
+        return;
+    }
+    for src_str in sources {
+        if src_str.trim().is_empty() {
+            continue;
         }
-    } else {
-        dst.to_path_buf()
-    };
-    if let Err(_) = fs::rename(src, &dst) {
-        let copied = fs::copy(src, &dst);
-        if copied.is_ok() {
-            let deleted = fs::remove_file(src);
-            if deleted.is_err() {
-                eprintln!("mv: can't delete {}: {}", src.display(), deleted.unwrap_err());
+
+        let src = Path::new(src_str);
+
+        if !src.exists() {
+            eprintln!("mv: cannot stat '{}': No such file or directory", src.display());
+            continue;
+        }
+
+        let dst_path = if last.is_dir() {
+            match src.file_name() {
+                Some(name) => last.join(name),
+                None => {
+                    eprintln!("mv: cannot move '{}': invalid file name", src.display());
+                    continue;
+                }
             }
         } else {
-            eprintln!("mv: {}: {}", src.display(), copied.unwrap_err());
+            last.to_path_buf()
+        };
+
+        if let Err(e) = fs::rename(src, &dst_path) {
+            match fs::copy(src, &dst_path) {
+                Ok(_) => {
+                    if let Err(e) = fs::remove_file(src) {
+                        eprintln!("mv: cannot remove '{}': {}", src.display(), e);
+                    }
+                }
+                Err(e) => {
+                    eprintln!(
+                        "mv: cannot move '{}' to '{}': {}",
+                        src.display(),
+                        dst_path.display(),
+                        e
+                    );
+                }
+            }
         }
     }
 }
+
+
 
 //     if args.len() != 2 {
 //         eprintln!("mv: wrong number of arguments");
