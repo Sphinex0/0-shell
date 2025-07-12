@@ -7,9 +7,9 @@ exit
 
 
 team : mohamed, adnane
-cat
-cp
-mv
+cat //added reading multiple files
+cp //-r err handling
+mv //fixed mv and added moving multiple files/directorys to one source
 rm (supporting -r)
 mkdir
 
