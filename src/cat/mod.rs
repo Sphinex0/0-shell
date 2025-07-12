@@ -1,36 +1,36 @@
-use std::{io::{stdin, Write}, path::PathBuf};
-
+use std::{fs, io::{stdin, Write}, path::PathBuf};
 use crate::print_error;
 
 pub fn cat(args: &[String], current_dir: &PathBuf) -> String {
-    let path_copy: &mut PathBuf = &mut current_dir.clone();
-    let mut action_done: bool = false;
+    let mut result = String::new();
+    let mut file_found = false;
 
     for arg in args {
-        let mut tmp: PathBuf = path_copy.clone();
-        tmp.push(arg);
+        let mut full_path = current_dir.clone();
+        full_path.push(arg);
 
-        match std::fs::read_to_string(tmp) {
+        match fs::read_to_string(&full_path) {
             Ok(content) => {
-                return content;
+                result.push_str(&content);
+                file_found = true;
             }
             Err(err) => print_error(&format!("{arg}: {err}")),
         }
+    }
 
-        action_done = true;
+    if file_found {
+        return result;
     }
-    if !action_done {
-        loop {
-            let mut input_tmp = String::new();
-            std::io::stdout().flush().unwrap();
-            let size = stdin().read_line(&mut input_tmp).unwrap();
-            if size == 0 {
-                // println!();
-                break;
-            }
-            print!("{input_tmp}")
+
+    loop {
+        let mut input_tmp = String::new();
+        std::io::stdout().flush().unwrap();
+        let size = stdin().read_line(&mut input_tmp).unwrap();
+        if size == 0 {
+            break;
         }
-        // print_error("cat: missing operand");
+        result.push_str(&input_tmp);
     }
-    "".to_string()
+
+    result
 }
