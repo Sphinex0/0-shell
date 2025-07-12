@@ -1,11 +1,14 @@
+use ctrlc;
 use shell::*;
 use std::env::*;
+use std::io;
 use std::io::Write;
 use std::io::stdin;
-use std::process::exit;
-use ctrlc;
-use std::sync::mpsc::channel;
 use std::path::PathBuf;
+use std::process::exit;
+use std::sync::mpsc::channel;
+use std::sync::Arc;
+use std::sync::Mutex;
 
 fn exec_command(
     command: &str,
@@ -19,7 +22,10 @@ fn exec_command(
     match command {
         "echo" => (Some(echo(args)), 0),
         "pwd" => (Some((pwd(current_dir), true)), 0),
-        "cd" => (None, cd(args, history_current_dir, current_dir, home)),
+        "cd" => {
+            let a = cd(args, history_current_dir, current_dir, home);
+            (None, 0)
+        }
         "mv" => {
             mv(&args);
             (None, 0)
@@ -67,11 +73,6 @@ fn exec_command(
 }
 
 fn main() {
-    let (tx, _rx) = channel();
-
-    ctrlc::set_handler(move || tx.send(()).expect("Could not send signal on channel."))
-        .expect("Error setting Ctrl-C handler");
-
     println!(
         "\x1b[1;31m
      ██████╗     ███████╗██╗  ██╗███████╗██╗     ██╗     
@@ -96,7 +97,20 @@ fn main() {
         }
     };
 
+    // let mut prompt = String::from("$");
+    let prompt = Arc::new(Mutex::new(String::new()));
+    let prompt_clone = Arc::clone(&prompt);
+
+
     let mut last_command_staus: Option<i32> = None;
+
+    ctrlc::set_handler( move || {
+        println!();
+        let prompt = prompt_clone.lock().unwrap();
+        print!("\x1b[1;33m➜  \x1b[1;36m{} \x1b[33m$ \x1b[0m", *prompt);
+        io::stdout().flush().expect("Failed to flush stdout");
+    })
+    .expect("Error setting Ctrl+C handler");
 
     loop {
         // let mut current_dir = current_dir().unwrap();
@@ -105,6 +119,7 @@ fn main() {
             Err(_) => current_dir.display().to_string(),
         };
 
+        *prompt.lock().unwrap() = address.clone();
         print!("\x1b[1;33m➜  \x1b[1;36m{} \x1b[33m$ \x1b[0m", address);
         std::io::stdout().flush().unwrap();
         let mut entry = String::new();
@@ -170,4 +185,3 @@ fn main() {
         }
     }
 }
-
