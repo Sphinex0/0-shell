@@ -3,10 +3,8 @@ use std::env::*;
 use std::io::Write;
 use std::io::stdin;
 use std::process::exit;
-
 use ctrlc;
 use std::sync::mpsc::channel;
-
 use std::path::PathBuf;
 
 fn exec_command(
