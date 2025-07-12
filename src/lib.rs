@@ -22,8 +22,8 @@ pub use rm::*;
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Command {
-    pub name: String,           // The command name, e.g., "echo"
-    pub args: Vec<String>, // List of arguments (strings or substitutions)
+    pub name: String,      // The command name, e.g., "echo"
+    pub args: Vec<String>, // List of arguments
 }
 
 impl Command {
@@ -31,6 +31,14 @@ impl Command {
         if word.is_empty() {
             return;
         }
+        if self.name.is_empty() {
+            self.name = word.clone();
+        } else {
+            self.args.push(word.clone());
+        }
+    }
+
+    pub fn add_string_whatever(&mut self, word: &String) {
         if self.name.is_empty() {
             self.name = word.clone();
         } else {
@@ -63,7 +71,7 @@ impl CostumSplit for String {
 
         let chs = self.split("\n").collect::<Vec<_>>();
         for (i, line) in chs.iter().enumerate() {
-            if matches!(state, State::DoubleQuote | State::SingleQuote) {
+            if state != State::Normal && !open_backslash {
                 word.push('\n');
             }
             if open_backslash && i != chs.len() - 1 {
@@ -78,12 +86,12 @@ impl CostumSplit for String {
                         } else if ch.is_whitespace() && !open_backslash {
                             command.add_string(&word);
 
-                            let le = command.args.len();
-                            if le > 0
-                                && command.args[le - 1] != " ".to_string()
-                            {
-                                command.add_string(&" ".to_string());
-                            }
+                            // let le = command.args.len();
+                            // if le > 0
+                            //     && command.args[le - 1] != " ".to_string()
+                            // {
+                            //     command.add_string(&" ".to_string());
+                            // }
 
                             word.clear();
                         } else if ch == '"' && !open_backslash {
@@ -100,27 +108,41 @@ impl CostumSplit for String {
                         }
                     }
                     State::DoubleQuote => {
-                         if ch == '"' && !open_backslash {
+                        if ch == '"' && !open_backslash {
                             state = State::Normal;
+                            if let Some(ch2) = chars.peek() {
+                                if ch2.is_whitespace() {
+                                    command.add_string_whatever(&word);
+                                    word.clear();
+                                    chars.next();
+                                }
+                            }
                         } else if ch == '\\' && !open_backslash {
                             open_backslash = true;
-                        }else {
-                                if open_backslash {
-                                    if ['"', '\\', '`', '$'].contains(&ch) {
-                                        word.push(ch);
-                                    } else {
-                                        word.push('\\');
-                                        word.push(ch);
-                                    }
-                                    open_backslash = false;
+                        } else {
+                            if open_backslash {
+                                if ['"', '\\', '`', '$'].contains(&ch) {
+                                    word.push(ch);
                                 } else {
+                                    word.push('\\');
                                     word.push(ch);
                                 }
+                                open_backslash = false;
+                            } else {
+                                word.push(ch);
+                            }
                         }
                     }
                     State::SingleQuote => {
                         if ch == '\'' {
                             state = State::Normal;
+                            if let Some(ch2) = chars.peek() {
+                                if ch2.is_whitespace() {
+                                    command.add_string_whatever(&word);
+                                    word.clear();
+                                    chars.next();
+                                }
+                            }
                         } else {
                             word.push(ch);
                         }
@@ -133,8 +155,7 @@ impl CostumSplit for String {
             command.add_string(&word);
         }
 
-        let open = matches!(state, State::DoubleQuote | State::SingleQuote)
-            || open_backslash;
+        let open = matches!(state, State::DoubleQuote | State::SingleQuote) || open_backslash;
         (command, open)
     }
 }

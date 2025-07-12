@@ -1,5 +1,5 @@
 pub fn echo(args: &[String]) -> (String, bool) {
-    let entry = args.join("");
+    let entry = args.join(" ");
     parse_entry(&entry)
 }
 
