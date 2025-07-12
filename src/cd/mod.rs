@@ -22,7 +22,7 @@ pub fn cd(tab: &[String], history: &mut PathBuf, current_di: &mut PathBuf, home:
                 print_error(&err.to_string());
             }
         }
-        _ => {
+        _ if path.len() != 0 => {
             if &path[0..1] == "~" {
                 path = home.display().to_string() + &path[1..];
             }
@@ -31,9 +31,9 @@ pub fn cd(tab: &[String], history: &mut PathBuf, current_di: &mut PathBuf, home:
                 print_error(&err.to_string());
             }
         }
+        _ => {}
     }
 
-    
     if change {
         history.push(current_di.clone());
         current_di.push(current_dir().unwrap());
