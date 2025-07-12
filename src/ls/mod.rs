@@ -360,7 +360,7 @@ pub fn ls(tab: &[String], current_dir: &PathBuf) -> String {
                     'a' => ls.a_flag = true,
                     'F' => ls.f_flag = true,
                     'l' => ls.l_flag = true,
-                    _ => {}
+                    _ => {return  format!("ls: invalid option -- '{ch}'");}
                 }
             }
         } else {
