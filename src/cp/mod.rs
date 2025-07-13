@@ -8,7 +8,7 @@ pub fn cp(args: &[String])-> i32 {
         return 1;
     }
     let dst = Path::new(&args[args.len() - 1]);
-    if args.len() > 2 && !dst.is_dir() {
+    if  !dst.is_dir() {
         print_error(&format!("cp: target '{}' is not a directory", dst.display()));
         return 1;
     }
