@@ -20,48 +20,47 @@ pub fn is_executable(path: &Path) -> bool {
     }
 }
 
-
-
-pub fn format_permissions(permissions: &Permissions) -> String {
+pub fn format_permissions(permissions: &Permissions, path: &Path) -> String {
     let mode = permissions.mode();
-    let owner = (mode & 0o700) >> 6; // Owner rwx (bits 6–8)
-    let group = (mode & 0o070) >> 3; // Group rwx (bits 3–5)
-    let others = mode & 0o007; // Others rwx (bits 0–2)
+    let owner = (mode & 0o700) >> 6;
+    let group = (mode & 0o070) >> 3;
+    let others = mode & 0o007;
 
-    let mut perm_str = String::with_capacity(9); // 9 for perms
+    let mut perm_str = String::with_capacity(10);
 
-    // Owner permissions
     perm_str.push(if owner & 0o4 != 0 { 'r' } else { '-' });
     perm_str.push(if owner & 0o2 != 0 { 'w' } else { '-' });
     if mode & 0o4000 != 0 {
-        // Setuid
         perm_str.push(if owner & 0o1 != 0 { 's' } else { 'S' });
     } else {
         perm_str.push(if owner & 0o1 != 0 { 'x' } else { '-' });
     }
 
-    // Group permissions
     perm_str.push(if group & 0o4 != 0 { 'r' } else { '-' });
     perm_str.push(if group & 0o2 != 0 { 'w' } else { '-' });
     if mode & 0o2000 != 0 {
-        // Setgid
         perm_str.push(if group & 0o1 != 0 { 's' } else { 'S' });
     } else {
         perm_str.push(if group & 0o1 != 0 { 'x' } else { '-' });
     }
 
-    // Others permissions
     perm_str.push(if others & 0o4 != 0 { 'r' } else { '-' });
     perm_str.push(if others & 0o2 != 0 { 'w' } else { '-' });
     if mode & 0o1000 != 0 {
-        // Sticky bit
         perm_str.push(if others & 0o1 != 0 { 't' } else { 'T' });
     } else {
         perm_str.push(if others & 0o1 != 0 { 'x' } else { '-' });
     }
 
+    // Basic extended attribute check (fallback)
+     let attr_len = unsafe {libc::listxattr(path.to_str().unwrap_or("").as_ptr() as *const _, std::ptr::null_mut(), 0)};
+        if attr_len > 0 {
+            perm_str.push('+');
+        }
+
     perm_str
 }
+
 pub fn get_usr(metadata: &Metadata) -> User {
     let uid = metadata.uid();
     let user =  match get_user_by_uid(uid) {

@@ -122,10 +122,18 @@ impl Ls {
             let rdev = file.metadata.rdev();
             let major_num = major(rdev);
             let minor_num = minor(rdev);
-            let size_field = if file.metadata.file_type().is_char_device() || file.metadata.file_type().is_block_device() {
+            let size_field = if file.metadata.file_type().is_char_device()
+                || file.metadata.file_type().is_block_device()
+            {
                 max_major = max_major.max(major_num.to_string().len());
                 max_minor = max_minor.max(minor_num.to_string().len());
-                format!("{:>width_major$}, {:>width_minor$}", major_num, minor_num, width_major = max_major, width_minor = max_minor)
+                format!(
+                    "{:>width_major$}, {:>width_minor$}",
+                    major_num,
+                    minor_num,
+                    width_major = max_major,
+                    width_minor = max_minor
+                )
             } else {
                 file.metadata.len().to_string()
             };
@@ -182,7 +190,9 @@ impl Ls {
         }
 
         self.files.sort_by(|a, b| {
-            a.name.to_ascii_lowercase().cmp(&b.name.to_ascii_lowercase())
+            a.name
+                .to_ascii_lowercase()
+                .cmp(&b.name.to_ascii_lowercase())
         });
 
         let mut res = Vec::new();
@@ -247,7 +257,8 @@ impl Ls {
                                             name.push('*');
                                         }
                                     }
-                                    file.name = format!("{}\x1b[0m -> {color2}{}\x1b[0m", file.name, name);
+                                    file.name =
+                                        format!("{}\x1b[0m -> {color2}{}\x1b[0m", file.name, name);
                                 }
                                 Err(_) => {
                                     file.name = format!(
@@ -274,13 +285,22 @@ impl Ls {
                 };
 
                 let formatted_time = get_time(&file.metadata);
-                let perms = helpers::format_permissions(&permissions);
+                let perms = helpers::format_permissions(
+                    &permissions,
+                    &file.entry.as_ref().unwrap_or(&PathBuf::new()),
+                );
                 let hardlink = file.metadata.nlink();
                 let size_field = if file_type.is_char_device() || file_type.is_block_device() {
                     let rdev = file.metadata.rdev();
                     let major_num = major(rdev);
                     let minor_num = minor(rdev);
-                    format!("{:>width_major$}, {:>width_minor$}", major_num, minor_num, width_major = max_major, width_minor = max_minor)
+                    format!(
+                        "{:>width_major$}, {:>width_minor$}",
+                        major_num,
+                        minor_num,
+                        width_major = max_major,
+                        width_minor = max_minor
+                    )
                 } else {
                     file.metadata.len().to_string()
                 };
@@ -292,7 +312,9 @@ impl Ls {
                     size = size_field,
                     time = formatted_time,
                     name = file.name,
-                    width_links = max_link,
+                    width_links = if perms.contains("+") {max_link-1} else {
+max_link
+                    },
                     width_user = max_user,
                     width_group = max_group,
                     width_size = max_size,
