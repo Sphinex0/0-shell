@@ -2,7 +2,7 @@ use std::fs;
 use std::path::PathBuf;
 
 use crate::print_error;
-pub fn rm(args: &[String], current_dir: &PathBuf) {
+pub fn rm(args: &[String], current_dir: &PathBuf)->i32 {
     let mut recursive = false;
     let mut paths = vec![];
     for arg in args {
@@ -14,7 +14,7 @@ pub fn rm(args: &[String], current_dir: &PathBuf) {
     }
     if paths.is_empty() {
         print_error("rm: missing operand");
-        return;
+        return 1;
     }
     for arg in paths {
         let mut tmp = current_dir.clone();
@@ -39,4 +39,5 @@ pub fn rm(args: &[String], current_dir: &PathBuf) {
             }
         }
     }
+    0
 }

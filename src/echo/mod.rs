@@ -1,6 +1,13 @@
-pub fn echo(args: &[String]) -> (String, bool) {
+pub fn echo(args: &[String]) -> i32 {
     let entry = args.join(" ");
-    parse_entry(&entry)
+
+    let (content, newline) = parse_entry(&entry);
+    if newline{
+        println!("{content}");
+    }else{
+        print!("{content}")
+    }
+    0
 }
 
 fn parse_entry(entry: &str) -> (String, bool) {

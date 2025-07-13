@@ -13,54 +13,39 @@ fn exec_command(
     history_current_dir: &mut PathBuf,
     hist: &Vec<String>,
     home: &PathBuf,
-    last_command_staus: &Option<i32>,
-) -> (Option<(String, bool)>, i32) {
+    last_command_staus: i32,
+) -> i32 {
     match command {
-        "echo" => (Some(echo(args)), 0),
-        "pwd" => (Some((pwd(current_dir), true)), 0),
-        "cd" => (None, cd(args, history_current_dir, current_dir, home)),
-        "mv" => {
-            mv(&args);
-            (None, 0)
-        }
-        "cp" => {
-            cp(&args);
-            (None, 0)
-        }
-        "ls" => (Some((ls(&args, &current_dir), true)), 0),
-        "cat" => (Some((cat(args, current_dir), false)), 0),
-        "rm" => {
-            rm(args, current_dir);
-            (None, 0)
-        }
-        "mkdir" => {
-            mkdir(args, current_dir);
-            (None, 0)
-        }
-        "history" => (Some((history(hist), true)), 0),
+        "echo" => echo(args),
+        "pwd" => pwd(current_dir),
+        "cd" => cd(args, history_current_dir, current_dir, home),
+        "mv" => mv(&args),
+        "cp" => cp(&args),
+        "ls" => ls(&args, &current_dir),
+        "cat" => cat(args, current_dir),
+        "rm" => rm(args, current_dir),
+        "mkdir" => mkdir(args, current_dir),
+        "history" => history(hist),
         "exit" => {
             if args.len() == 0 {
-                match last_command_staus {
-                    Some(code) => exit(*code),
-                    None => exit(0),
-                }
+                exit(last_command_staus);
             } else {
                 match args[0].parse::<i32>() {
                     Ok(code) => exit(code),
                     Err(_) => {
                         print_error("exit: Illegal number: ");
-                        (None, 2)
+                        2
                     }
                 }
             }
         }
         "clear" => {
             println!("\x1Bc");
-            (None, 0)
+            0
         }
         _ => {
             print_error(&format!("Command <{}\x1b[31m> not found", command));
-            (None, 127)
+            127
         }
     }
 }
@@ -90,7 +75,7 @@ fn main() {
         }
     };
 
-    let mut last_command_staus: Option<i32> = None;
+    let mut last_command_staus = 0;
 
     ctrlc::set_handler(|| {}).expect("Error setting Ctrl+C handler");
 
@@ -140,6 +125,7 @@ fn main() {
             continue;
         }
 
+
         let output = exec_command(
             &command.name,
             &command.args,
@@ -147,16 +133,16 @@ fn main() {
             &mut history_current_dir,
             &hist,
             &home,
-            &last_command_staus,
+            last_command_staus,
         );
-        last_command_staus = Some(output.1);
-        if let Some((output, newline)) = output.0 {
-            if newline {
-                println!("{}", output);
-            } else {
-                print!("{}", output);
-            }
-        }
+        last_command_staus = output;
+        // if let Some((output, newline)) = output.0 {
+        //     if newline {
+        //         println!("{}", output);
+        //     } else {
+        //         print!("{}", output);
+        //     }
+        // }
 
         // Add to history if entry has non-whitespace characters
         if entry.split_whitespace().collect::<Vec<_>>().len() != 0 {

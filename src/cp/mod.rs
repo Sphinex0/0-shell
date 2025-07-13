@@ -1,15 +1,15 @@
 use std::fs;
 use std::path::Path;
 
-pub fn cp(args: &[String]) {
+pub fn cp(args: &[String])-> i32 {
     if args.len() < 2 {
         eprintln!("cp: wrong number of arguments");
-        return;
+        return 1;
     }
     let dst = Path::new(&args[args.len() - 1]);
     if args.len() > 2 && !dst.is_dir() {
         eprintln!("cp: target '{}' is not a directory", dst.display());
-        return;
+        return 1;
     }
     for src_str in &args[..args.len() - 1] {
         let src = Path::new(src_str);
@@ -30,4 +30,5 @@ pub fn cp(args: &[String]) {
             eprintln!("cp: cannot copy '{}': {}", src.display(), err);
         }
     }
+    0
 }

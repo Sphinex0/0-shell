@@ -1,21 +1,23 @@
 use std::fs;
 use std::path::Path;
 
-pub fn mv(args: &[String]) {
+use crate::print_error;
+
+pub fn mv(args: &[String])->i32 {
     dbg!(&args);
     if args.is_empty() {
-        eprintln!("mv: missing file operand");
-        return;
+        print_error("mv: missing file operand");
+        return 1;
     }
     if args.len() == 1 {
         eprintln!("mv: missing destination file operand after '{}'", args[0]);
-        return;
+        return 1;
     }
     let last = Path::new(&args[args.len() - 1]);
     let sources = &args[..args.len() - 1];
     if sources.len() > 1 && !last.is_dir() {
         eprintln!("mv: target '{}' is not a directory", last.display());
-        return;
+        return 1;
     }
     for src_str in sources {
         if src_str.trim().is_empty() {
@@ -60,6 +62,7 @@ pub fn mv(args: &[String]) {
             }
         }
     }
+    0
 }
 
 

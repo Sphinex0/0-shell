@@ -8,6 +8,8 @@ use std::os::unix::fs::FileTypeExt;
 use std::os::unix::fs::MetadataExt;
 use std::path::PathBuf;
 use term_size::dimensions;
+
+use crate::print_error;
 pub mod helpers;
 
 #[derive(Debug)]
@@ -103,15 +105,16 @@ impl Ls {
         }
 
         for entry in entries {
-            let metadata = entry.metadata().unwrap();
-
+            let metadata = entry.metadata().unwrap_or_else(|_| {
+                Metadata::from(fs::File::open("/dev/null").unwrap().metadata().unwrap())
+            });
             let mut file = Fileinfo::new(metadata.clone());
 
             // Get user and group info
-            let user = helpers::get_usr(&metadata).unwrap();
+            let user = helpers::get_usr(&metadata);
             let grp = helpers::get_grp(&metadata);
-            file.user = user.name().to_str().unwrap().to_string();
-            file.group = grp.name().to_str().unwrap().to_string();
+            file.user = user.name().to_str().unwrap_or("").to_string();
+            file.group = grp.name().to_str().unwrap_or("").to_string();
             let formatted_time = get_time(&file.metadata);
 
             max_user = max_user.max(file.user.len());
@@ -337,7 +340,7 @@ impl Ls {
     }
 }
 
-pub fn ls(tab: &[String], current_dir: &PathBuf) -> String {
+pub fn ls(tab: &[String], current_dir: &PathBuf) -> i32 {
     let target_dir_str = current_dir.clone();
     let mut prev_dir = current_dir.clone();
     prev_dir.push("..");
@@ -352,7 +355,8 @@ pub fn ls(tab: &[String], current_dir: &PathBuf) -> String {
                     'F' => ls.f_flag = true,
                     'l' => ls.l_flag = true,
                     _ => {
-                        return format!("ls: invalid option -- '{ch}'");
+                        print_error("ls: invalid option -- '{ch}'");
+                        return 1;
                     }
                 }
             }
@@ -418,12 +422,14 @@ pub fn ls(tab: &[String], current_dir: &PathBuf) -> String {
                     }
                     _ => format!("ls: cannot access '{}': {}", file_name, err),
                 };
-                output.push_str(&error_message);
+                print_error(&error_message);
+                return 1;
             }
         }
         if files.len() > 1 && i != files.len() - 1 {
             output.push('\n');
         }
     }
-    output
+    println!("{output}");
+    0
 }

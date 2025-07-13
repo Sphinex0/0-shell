@@ -1,5 +1,6 @@
 use chrono::Datelike;
 use chrono::{DateTime, Local};
+use chrono_tz::Tz;
 use std::fs;
 use std::fs::Metadata;
 use std::fs::Permissions;
@@ -41,9 +42,12 @@ pub fn format_permissions(permissions: &Permissions) -> String {
     perm_str
 }
 
-pub fn get_usr(metadata: &Metadata) -> Option<User> {
+pub fn get_usr(metadata: &Metadata) -> User {
     let uid = metadata.uid();
-    let user = get_user_by_uid(uid);
+    let user =  match get_user_by_uid(uid) {
+        Some(group) => group,
+        None => get_user_by_uid(0).unwrap_or(User::new(uid, "root", metadata.gid())),
+    };
     user
 }
 
@@ -95,8 +99,8 @@ pub fn get_symlink_target_name<P: AsRef<Path>>(
 }
 
 pub fn get_time(metadata: &Metadata) -> String {
-    let name = iana_time_zone::get_timezone().unwrap();
-    let tz = name.parse::<chrono_tz::Tz>().unwrap();
+    let name = iana_time_zone::get_timezone().unwrap_or("UTC".to_string());
+    let tz = name.parse::<chrono_tz::Tz>().unwrap_or(Tz::UTC);
     let last_mod_time = metadata.modified().unwrap_or(SystemTime::UNIX_EPOCH);
     let datetime: DateTime<Local> = last_mod_time.into();
     let datetime = datetime.with_timezone(&tz);
