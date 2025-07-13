@@ -48,6 +48,7 @@ struct Ls {
     files_names: Vec<String>,
     is_file: bool,
 }
+
 impl Ls {
     fn new() -> Self {
         Self {
@@ -94,11 +95,11 @@ impl Ls {
         let mut max_user = 0;
         let mut max_group = 0;
         let mut max_size = 0;
+        let mut max_major = 0;
+        let mut max_minor = 0;
         let mut total_blocks = 0;
         let mut max_time_size = 0;
         let mut max_name_size = 0;
-        let mut max_mijor = 0;
-        let mut max_minor = 0;
         let mut max_link = 0;
         self.files.clear();
         if self.a_flag && !self.is_file {
@@ -112,16 +113,26 @@ impl Ls {
             });
             let mut file = Fileinfo::new(metadata.clone());
 
+            let user = helpers::get_usr(&file.metadata);
+            let grp = helpers::get_grp(&file.metadata);
+            file.user = user.name().to_str().unwrap_or("").to_string();
+            file.group = grp.name().to_str().unwrap_or("").to_string();
+
             let formatted_time = get_time(&file.metadata);
             let rdev = file.metadata.rdev();
             let major_num = major(rdev);
             let minor_num = minor(rdev);
-            max_mijor = max_mijor.max(major_num.to_string().len());
-            max_minor = max_minor.max(minor_num.to_string().len());
+            let size_field = if file.metadata.file_type().is_char_device() || file.metadata.file_type().is_block_device() {
+                max_major = max_major.max(major_num.to_string().len());
+                max_minor = max_minor.max(minor_num.to_string().len());
+                format!("{:>width_major$}, {:>width_minor$}", major_num, minor_num, width_major = max_major, width_minor = max_minor)
+            } else {
+                file.metadata.len().to_string()
+            };
             max_user = max_user.max(file.user.len());
             max_link = max_link.max(file.metadata.nlink().to_string().len());
             max_group = max_group.max(file.group.len());
-            max_size = max_size.max(file.metadata.len().to_string().len());
+            max_size = max_size.max(size_field.len());
             max_time_size = max_time_size.max(formatted_time.len());
 
             let unsafe_characters = "*?[]$!'\"\\;&|<> ()`~#=";
@@ -171,20 +182,7 @@ impl Ls {
         }
 
         self.files.sort_by(|a, b| {
-            let a_tmp = a
-                .name
-                .chars()
-                .filter(|ch| ch.is_alphanumeric())
-                .collect::<String>();
-            let b_tmp = b
-                .name
-                .chars()
-                .filter(|ch| ch.is_alphanumeric())
-                .collect::<String>();
-            a_tmp
-                .to_ascii_lowercase()
-                .as_bytes()
-                .cmp(&b_tmp.to_ascii_lowercase().as_bytes())
+            a.name.to_ascii_lowercase().cmp(&b.name.to_ascii_lowercase())
         });
 
         let mut res = Vec::new();
@@ -205,7 +203,6 @@ impl Ls {
         };
 
         let mut matrix: Vec<Vec<String>> = vec![vec!["".to_string(); num_cols]; num_rows];
-        let mut add_5 = 0;
         for (i, file) in self.files.iter_mut().enumerate() {
             // Get user and group info
             let user = helpers::get_usr(&file.metadata);
@@ -245,14 +242,12 @@ impl Ls {
 
                                     if self.f_flag {
                                         if meta.is_dir() {
-                                            color2 = "\x1b[1;34m";
                                             name.push('/');
                                         } else if meta.is_file() && helpers::is_executable(&en) {
                                             name.push('*');
                                         }
                                     }
-                                    file.name =
-                                        format!("{}\x1b[0m -> {color2}{}\x1b[0m", file.name, name);
+                                    file.name = format!("{}\x1b[0m -> {color2}{}\x1b[0m", file.name, name);
                                 }
                                 Err(_) => {
                                     file.name = format!(
@@ -269,7 +264,6 @@ impl Ls {
                 } else if file_type.is_fifo() {
                     'p'
                 } else if file_type.is_char_device() {
-                    add_5 = 5;
                     'c'
                 } else if file_type.is_block_device() {
                     'b'
@@ -282,36 +276,29 @@ impl Ls {
                 let formatted_time = get_time(&file.metadata);
                 let perms = helpers::format_permissions(&permissions);
                 let hardlink = file.metadata.nlink();
-                let file_size = file.metadata.len();
                 let size_field = if file_type.is_char_device() || file_type.is_block_device() {
                     let rdev = file.metadata.rdev();
                     let major_num = major(rdev);
                     let minor_num = minor(rdev);
-                    format!(
-                        "{:<major_width$} {:>minor_width$}",
-                        format!("{major_num},"),
-                        minor_num,
-                        major_width = max_mijor,
-                        minor_width = max_minor,
-                    )
+                    format!("{:>width_major$}, {:>width_minor$}", major_num, minor_num, width_major = max_major, width_minor = max_minor)
                 } else {
-                    file_size.to_string()
+                    file.metadata.len().to_string()
                 };
 
                 res.push(format!(
-                "{type_char}{perms} {hardlink:width_links$} {user:<width_user$} {group:<width_grp$} {size:<width_size$} {time:>width_time$}  {color}{name}\x1b[0m{newline}",
-                user = file.user,
-                group = file.group,
-                size = size_field,
-                time = formatted_time,
-                name = file.name,
-                width_links = max_link,
-                width_user = max_user,
-                width_grp = max_group,
-                width_size = if max_size+add_5 < max_minor + max_mijor {max_minor + max_mijor} else {max_size+add_5},
-                width_time = max_time_size,
-                newline = if i != le - 1 { "\n" } else { "" },
-            ));
+                    "{type_char}{perms} {hardlink:>width_links$} {user:<width_user$} {group:<width_group$} {size:>width_size$} {time:<width_time$} {color}{name}\x1b[0m{newline}",
+                    user = file.user,
+                    group = file.group,
+                    size = size_field,
+                    time = formatted_time,
+                    name = file.name,
+                    width_links = max_link,
+                    width_user = max_user,
+                    width_group = max_group,
+                    width_size = max_size,
+                    width_time = max_time_size,
+                    newline = if i != le - 1 { "\n" } else { "" },
+                ));
                 continue;
             } else {
                 let row = i % num_rows;
@@ -337,13 +324,12 @@ impl Ls {
 
         let mut total_lines = String::new();
         if self.l_flag && !self.is_file {
-            total_lines = format!("total {}\n", (total_blocks + 1) / 2);
+            total_lines = format!("total {}\n", total_blocks);
         }
 
         if self.l_flag {
             total_lines + &res.join("")
         } else {
-            // Convert matrix to string, joining non-empty rows
             matrix
                 .into_iter()
                 .filter(|row| row.iter().any(|s| !s.is_empty()))
@@ -380,24 +366,24 @@ pub fn ls(tab: &[String], current_dir: &PathBuf) -> i32 {
     }
 
     let mut output = String::new();
-
     let files = ls.files_names.clone();
     let mut err_status = 0;
 
     for (i, file_name) in files.iter().enumerate() {
         let mut target_dir_str = current_dir.clone();
         target_dir_str.push(file_name);
-        let mut prev_dir = target_dir_str.clone();
-        prev_dir.push("..");
-        let mut dir = target_dir_str.clone();
-
+        let mut prev_dir = PathBuf::new();
+        if target_dir_str.is_dir() {
+            prev_dir = target_dir_str.clone();
+            prev_dir.push("..");
+        }
         ls.cur_dir = target_dir_str.clone();
-        ls.prev_dir = prev_dir.clone();
-        
+        ls.prev_dir = prev_dir;
+
         if files.len() > 1 {
             output.push_str(&format!("{}:\n", file_name));
         }
-        match fs::read_dir(&dir) {
+        match fs::read_dir(&target_dir_str) {
             Ok(entries) => {
                 let filtered: Vec<_> = entries.filter_map(Result::ok).collect();
                 output.push_str(&ls.myls(filtered));
@@ -410,21 +396,21 @@ pub fn ls(tab: &[String], current_dir: &PathBuf) -> i32 {
                 let error_message = match err.kind() {
                     ErrorKind::NotFound => format!(
                         "ls: cannot access '{}': No such file or directory",
-                        dir.to_string_lossy()
+                        target_dir_str.to_string_lossy()
                     ),
                     ErrorKind::PermissionDenied => format!(
                         "ls: cannot open directory '{}': Permission denied",
-                        dir.to_string_lossy()
+                        target_dir_str.to_string_lossy()
                     ),
                     ErrorKind::NotADirectory => {
                         err_status = 0;
-                        let temp_dir = dir.clone();
+                        let temp_dir = target_dir_str.clone();
                         let file_name: &str = temp_dir
                             .file_name()
                             .and_then(|os_str| os_str.to_str())
                             .unwrap_or("unknown");
-                        dir.pop();
-                        match fs::read_dir(&dir) {
+                        target_dir_str.pop();
+                        match fs::read_dir(&target_dir_str) {
                             Ok(entries) => {
                                 let filtered: Vec<_> = entries
                                     .filter_map(Result::ok)
@@ -432,11 +418,9 @@ pub fn ls(tab: &[String], current_dir: &PathBuf) -> i32 {
                                     .collect();
                                 ls.is_file = true;
                                 output.push_str(&ls.myls(filtered));
-
                                 if i != files.len() - 1 {
                                     output.push('\n');
                                 }
-                                // dbg!( &output);
                             }
                             Err(_) => {
                                 err_status = 1;
