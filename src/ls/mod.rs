@@ -356,7 +356,7 @@ pub fn ls(tab: &[String], current_dir: &PathBuf) -> i32 {
                     'l' => ls.l_flag = true,
                     _ => {
                         print_error("ls: invalid option -- '{ch}'");
-                        return 1;
+                        return 2;
                     }
                 }
             }
