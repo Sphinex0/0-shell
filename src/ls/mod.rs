@@ -49,11 +49,11 @@ struct Ls {
     is_file: bool,
 }
 impl Ls {
-    fn new(prev_dir: &PathBuf, cur_dir: &PathBuf) -> Self {
+    fn new() -> Self {
         Self {
             files: vec![],
-            prev_dir: prev_dir.to_path_buf(),
-            cur_dir: cur_dir.to_path_buf(),
+            prev_dir: PathBuf::new(),
+            cur_dir: PathBuf::new(),
             a_flag: false,
             f_flag: false,
             l_flag: false,
@@ -352,11 +352,7 @@ impl Ls {
 }
 
 pub fn ls(tab: &[String], current_dir: &PathBuf) -> i32 {
-    let target_dir_str = current_dir.clone();
-    let mut prev_dir = current_dir.clone();
-    prev_dir.push("..");
-
-    let mut ls = Ls::new(&prev_dir, current_dir);
+    let mut ls = Ls::new();
 
     for arg in tab {
         if arg.starts_with('-') {
@@ -386,8 +382,15 @@ pub fn ls(tab: &[String], current_dir: &PathBuf) -> i32 {
     let mut err_status = 0;
 
     for (i, file_name) in files.iter().enumerate() {
+        let mut target_dir_str = current_dir.clone();
+        target_dir_str.push(file_name);
+        let mut prev_dir = current_dir.clone();
+        prev_dir.push("..");
         let mut dir = target_dir_str.clone();
-        dir.push(file_name);
+
+        ls.cur_dir = target_dir_str.clone();
+        ls.prev_dir = prev_dir.clone();
+        
         if files.len() > 1 {
             output.push_str(&format!("{}:\n", file_name));
         }
