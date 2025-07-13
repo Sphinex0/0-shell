@@ -99,6 +99,7 @@ impl Ls {
         let mut max_name_size = 0;
         let mut max_mijor = 0;
         let mut max_minor = 0;
+        let mut max_link = 0;
         self.files.clear();
         if self.a_flag && !self.is_file {
             self.files.push(self.get("."));
@@ -118,6 +119,7 @@ impl Ls {
             max_mijor = max_mijor.max(major_num.to_string().len());
             max_minor = max_minor.max(minor_num.to_string().len());
             max_user = max_user.max(file.user.len());
+            max_link = max_link.max(file.metadata.nlink().to_string().len());
             max_group = max_group.max(file.group.len());
             max_size = max_size.max(file.metadata.len().to_string().len());
             max_time_size = max_time_size.max(formatted_time.len());
@@ -297,12 +299,13 @@ impl Ls {
                 };
 
                 res.push(format!(
-                "{type_char}{perms} {hardlink:2} {user:<width_user$} {group:<width_grp$} {size:<width_size$} {time:>width_time$}  {color}{name}\x1b[0m{newline}",
+                "{type_char}{perms} {hardlink:width_links$} {user:<width_user$} {group:<width_grp$} {size:<width_size$} {time:>width_time$}  {color}{name}\x1b[0m{newline}",
                 user = file.user,
                 group = file.group,
                 size = size_field,
                 time = formatted_time,
                 name = file.name,
+                width_links = max_link,
                 width_user = max_user,
                 width_grp = max_group,
                 width_size = if max_size+add_5 < max_minor + max_mijor {max_minor + max_mijor} else {max_size+add_5},
