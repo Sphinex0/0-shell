@@ -384,7 +384,7 @@ pub fn ls(tab: &[String], current_dir: &PathBuf) -> i32 {
     for (i, file_name) in files.iter().enumerate() {
         let mut target_dir_str = current_dir.clone();
         target_dir_str.push(file_name);
-        let mut prev_dir = current_dir.clone();
+        let mut prev_dir = target_dir_str.clone();
         prev_dir.push("..");
         let mut dir = target_dir_str.clone();
 
