@@ -200,7 +200,7 @@ impl Ls {
         };
 
         let mut matrix: Vec<Vec<String>> = vec![vec!["".to_string(); num_cols]; num_rows];
-
+        let mut add_5 = 0;
         for (i, file) in self.files.iter_mut().enumerate() {
             if !self.a_flag && file.hidden {
                 continue;
@@ -259,6 +259,7 @@ impl Ls {
                 } else if file_type.is_fifo() {
                     'p'
                 } else if file_type.is_char_device() {
+                    add_5 = 5;
                     'c'
                 } else if file_type.is_block_device() {
                     'b'
@@ -290,7 +291,7 @@ impl Ls {
                 name = file.name,
                 width_user = max_user,
                 width_grp = max_group,
-                width_size = max_size+5,
+                width_size = max_size+add_5,
                 width_time = max_time_size,
                 newline = if i != le - 1 { "\n" } else { "" },
             ));
