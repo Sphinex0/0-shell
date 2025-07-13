@@ -4,7 +4,6 @@ use std::path::Path;
 use crate::print_error;
 
 pub fn mv(args: &[String])->i32 {
-    dbg!(&args);
     if args.is_empty() {
         print_error("mv: missing file operand");
         return 1;
