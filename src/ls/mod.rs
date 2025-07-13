@@ -1,5 +1,5 @@
 pub use helpers::*;
-use libc::major;
+use libc::{major, minor};
 use std::fs;
 use std::fs::DirEntry;
 use std::fs::Metadata;
@@ -97,7 +97,8 @@ impl Ls {
         let mut total_blocks = 0;
         let mut max_time_size = 0;
         let mut max_name_size = 0;
-
+        let mut max_mijor = 0;
+        let mut max_minor = 0;
         self.files.clear();
         if self.a_flag && !self.is_file {
             self.files.push(self.get("."));
@@ -116,7 +117,11 @@ impl Ls {
             file.user = user.name().to_str().unwrap_or("").to_string();
             file.group = grp.name().to_str().unwrap_or("").to_string();
             let formatted_time = get_time(&file.metadata);
-
+            let rdev = file.metadata.rdev();
+            let major_num = major(rdev);
+            let minor_num = minor(rdev);
+            max_mijor = max_mijor.max(major_num.to_string().len());
+            max_minor = max_minor.max(minor_num.to_string().len());
             max_user = max_user.max(file.user.len());
             max_group = max_group.max(file.group.len());
             max_size = max_size.max(file.metadata.len().to_string().len());
@@ -279,14 +284,20 @@ impl Ls {
                 let size_field = if file_type.is_char_device() || file_type.is_block_device() {
                     let rdev = file.metadata.rdev();
                     let major_num = major(rdev);
-                    // let minor_num = minor(rdev) ;
-                    format!("{ }, ", major_num)
+                    let minor_num = minor(rdev);
+                    format!(
+                        "{:<major_width$} {:>minor_width$}",
+                        format!("{major_num},"),
+                        minor_num,
+                        major_width = max_mijor,
+                        minor_width = max_minor,
+                    )
                 } else {
                     file_size.to_string()
                 };
 
                 res.push(format!(
-                "{type_char}{perms} {hardlink:2} {user:<width_user$} {group:>width_grp$} {size:<width_size$} {time:>width_time$}  {color}{name}\x1b[0m{newline}",
+                "{type_char}{perms} {hardlink:2} {user:<width_user$} {group:<width_grp$} {size:<width_size$} {time:>width_time$}  {color}{name}\x1b[0m{newline}",
                 user = file.user,
                 group = file.group,
                 size = size_field,
@@ -294,7 +305,7 @@ impl Ls {
                 name = file.name,
                 width_user = max_user,
                 width_grp = max_group,
-                width_size = max_size+add_5,
+                width_size = if max_size+add_5 < max_minor + max_mijor {max_minor + max_mijor} else {max_size+add_5},
                 width_time = max_time_size,
                 newline = if i != le - 1 { "\n" } else { "" },
             ));
@@ -364,7 +375,6 @@ pub fn ls(tab: &[String], current_dir: &PathBuf) -> i32 {
             ls.files_names.push(arg.to_string());
         }
     }
-
 
     if ls.files_names.is_empty() {
         ls.files_names.push(".".to_string());
