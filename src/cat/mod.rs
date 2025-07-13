@@ -1,5 +1,9 @@
-use std::{fs, io::{self, BufRead}, path::PathBuf};
 use crate::print_error;
+use std::{
+    fs,
+    io::{self, BufRead},
+    path::PathBuf,
+};
 
 pub fn cat(args: &[String], current_dir: &PathBuf) -> String {
     if args.is_empty() {
@@ -7,10 +11,11 @@ pub fn cat(args: &[String], current_dir: &PathBuf) -> String {
         for line_res in stdin.lock().lines() {
             let line = match line_res {
                 Ok(l) => l,
-                Err(_) => break,
+                Err(_) => break
             };
             println!("{}", line);
         }
+        String::new()
     } else {
         let mut result = String::new();
         for arg in args {
