@@ -79,20 +79,22 @@ fn main() {
     );
 
     // set_current_dir(path)
-    let mut history_current_dir = current_dir().unwrap();
-    let mut current_dir = current_dir().unwrap();
+    let mut history_current_dir = current_dir().unwrap_or(PathBuf::from("/"));
+    let mut current_dir = history_current_dir.clone();
     let mut hist: Vec<String> = Vec::new();
     let home = match home_dir() {
         Some(p) => p,
         None => {
             print_error("Impossible to get your home dir!");
-            return;
+            current_dir.clone()
         }
     };
 
     let mut last_command_staus: Option<i32> = None;
+    if let Err(_) = ctrlc::set_handler(|| {}) {
+        print_error("Error setting Ctrl+C handler");
+    };
 
-    ctrlc::set_handler(|| {}).expect("Error setting Ctrl+C handler");
 
     loop {
         // let mut current_dir = current_dir().unwrap();
