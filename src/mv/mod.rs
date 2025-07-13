@@ -10,13 +10,13 @@ pub fn mv(args: &[String])->i32 {
         return 1;
     }
     if args.len() == 1 {
-        eprintln!("mv: missing destination file operand after '{}'", args[0]);
+        print_error(&format!("mv: missing destination file operand after '{}'", args[0]));
         return 1;
     }
     let last = Path::new(&args[args.len() - 1]);
     let sources = &args[..args.len() - 1];
     if sources.len() > 1 && !last.is_dir() {
-        eprintln!("mv: target '{}' is not a directory", last.display());
+        print_error(&format!("mv: target '{}' is not a directory", last.display()));
         return 1;
     }
     for src_str in sources {
@@ -27,7 +27,7 @@ pub fn mv(args: &[String])->i32 {
         let src = Path::new(src_str);
 
         if !src.exists() {
-            eprintln!("mv: cannot stat '{}': No such file or directory", src.display());
+            print_error(&format!("mv: cannot stat '{}': No such file or directory", src.display()));
             continue;
         }
 
@@ -35,7 +35,7 @@ pub fn mv(args: &[String])->i32 {
             match src.file_name() {
                 Some(name) => last.join(name),
                 None => {
-                    eprintln!("mv: cannot move '{}': invalid file name", src.display());
+                    print_error(&format!("mv: cannot move '{}': invalid file name", src.display()));
                     continue;
                 }
             }
@@ -44,19 +44,19 @@ pub fn mv(args: &[String])->i32 {
         };
 
         if let Err(e) = fs::rename(src, &dst_path) {
-            eprintln!("mv: rename failed '{}': {}", src.display(), e);
+            print_error(&format!("mv: rename failed '{}': {}", src.display(), e));
             match fs::copy(src, &dst_path) {
                 Ok(_) => {
                     if let Err(e) = fs::remove_file(src) {
-                        eprintln!("mv: cannot remove '{}': {}", src.display(), e);
+                        print_error(&format!("mv: cannot remove '{}': {}", src.display(), e));
                     }
                 }
                 Err(e) => {
-                    eprintln!(
+                    print_error(&format!(
                         "mv: cannot move '{}' to '{}': {}",
                         src.display(),
                         dst_path.display(),
-                        e
+                        e)
                     );
                 }
             }
