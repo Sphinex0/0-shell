@@ -1,14 +1,14 @@
 use crate::print_error;
 use std::{
     fs,
-    io::{self, BufRead},
+    io::self,
     path::PathBuf,
 };
 
 pub fn cat(args: &[String], current_dir: &PathBuf) -> i32 {
     if args.is_empty() {
         let stdin = io::stdin();
-        for line_res in stdin.lock().lines() {
+        for line_res in stdin.lines() {
             let line = match line_res {
                 Ok(l) => l,
                 Err(_) => {
@@ -29,7 +29,7 @@ pub fn cat(args: &[String], current_dir: &PathBuf) -> i32 {
                 },
             }
         }
+        print!("{}", result);
     }
-
     0
 }
