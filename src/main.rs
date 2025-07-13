@@ -82,7 +82,6 @@ fn main() {
 
 
     loop {
-        // let mut current_dir = current_dir().unwrap();
         let address = match current_dir.strip_prefix(&home) {
             Ok(p) => "\x1b[1;31m~\x1b[1;36m/".to_string() + &p.display().to_string(),
             Err(_) => current_dir.display().to_string(),
@@ -105,7 +104,6 @@ fn main() {
                 std::io::stdout().flush().unwrap();
                 let size = stdin().read_line(&mut input_tmp).unwrap();
                 if size == 0 {
-                    // println!();
                     break;
                 }
                 entry.push_str(&input_tmp);
@@ -138,13 +136,6 @@ fn main() {
             last_command_staus,
         );
         last_command_staus = output;
-        // if let Some((output, newline)) = output.0 {
-        //     if newline {
-        //         println!("{}", output);
-        //     } else {
-        //         print!("{}", output);
-        //     }
-        // }
 
         // Add to history if entry has non-whitespace characters
         if entry.split_whitespace().collect::<Vec<_>>().len() != 0 {
