@@ -2,9 +2,9 @@ pub fn echo(args: &[String]) -> i32 {
     let entry = args.join(" ");
 
     let (content, newline) = parse_entry(&entry);
-    if newline{
+    if newline {
         println!("{content}");
-    }else{
+    } else {
         print!("{content}")
     }
     0
@@ -58,6 +58,31 @@ fn parse_entry(entry: &str) -> (String, bool) {
                                     };
                                 }
                                 match u8::from_str_radix(&octal, 8) {
+                                    Ok(val) => result.push(val as char),
+                                    _ => {}
+                                }
+                            }
+                            None => {}
+                        },
+                        'x' => match chars.peek() {
+                            //1
+                            Some(&ch) => {
+                                let mut exa = String::new();
+                                if ch.is_digit(16) {
+                                    exa.push(ch);
+                                    chars.next();
+                                    //2
+                                    match chars.peek() {
+                                        Some(&ch2) => {
+                                            if ch2.is_digit(16) {
+                                                exa.push(ch2);
+                                                chars.next();
+                                            }
+                                        }
+                                        None => {}
+                                    };
+                                }
+                                match u8::from_str_radix(&exa, 16) {
                                     Ok(val) => result.push(val as char),
                                     _ => {}
                                 }
