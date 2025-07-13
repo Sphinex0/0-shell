@@ -1,8 +1,6 @@
 use crate::print_error;
 use std::{
-    fs,
-    io::self,
-    path::PathBuf,
+    fs, io, path::PathBuf
 };
 
 pub fn cat(args: &[String], current_dir: &PathBuf) -> i32 {
