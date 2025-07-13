@@ -11,6 +11,7 @@ use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
 use term_size::dimensions;
 use users::*;
+use libc::{major, minor};
 
 #[derive(Debug)]
 struct Fileinfo {
@@ -69,9 +70,8 @@ impl Ls {
             &self.prev_dir
         };
 
-        // Try to get metadata
         let metadata = fs::metadata(target_path).unwrap_or_else(|_| {
-            Metadata::from(fs::File::open("/dev/null").unwrap().metadata().unwrap()) // dummy fallback
+            Metadata::from(fs::File::open("/dev/null").unwrap().metadata().unwrap())
         });
 
         let mut name = path.to_string();
@@ -290,17 +290,25 @@ impl Ls {
                 let perms = format_permissions(&permissions);
                 let hardlink = file.metadata.nlink();
                 let file_size = file.metadata.len();
+                let size_field = if file_type.is_char_device() || file_type.is_block_device() {
+                    let rdev = file.metadata.rdev();
+                    let major_num = major(rdev) ; 
+                   // let minor_num = minor(rdev) ; 
+                    format!("{ }, ", major_num)
+                } else {
+                        file_size.to_string()
+                };
 
                 res.push(format!(
-                "{type_char}{perms} {hardlink:2} {user:<width_user$} {group:>width_grp$} {size:>width_size$} {time:>width_time$}  {color}{name}\x1b[0m{newline}",
+                "{type_char}{perms} {hardlink:2} {user:<width_user$} {group:>width_grp$} {size:<width_size$} {time:>width_time$}  {color}{name}\x1b[0m{newline}",
                 user = file.user,
                 group = file.group,
-                size = file_size,
+                size = size_field,
                 time = formatted_time,
                 name = file.name,
                 width_user = max_user,
                 width_grp = max_group,
-                width_size = max_size,
+                width_size = max_size+5,
                 width_time = max_time_size,
                 newline = if i != le - 1 { "\n" } else { "" },
             ));
@@ -319,9 +327,9 @@ impl Ls {
                     color = "\x1b[1;32m";
                 }
                 let padded_name = if num_rows == 1 {
-                  format!("{} ", file.name)    
+                    format!("{} ", file.name)
                 } else {
-                  format!("{:width$}", file.name, width = col_width)
+                    format!("{:width$}", file.name, width = col_width)
                 };
                 matrix[row][col] = format!("{}{}\x1b[0m", color, padded_name);
             }
@@ -360,7 +368,9 @@ pub fn ls(tab: &[String], current_dir: &PathBuf) -> String {
                     'a' => ls.a_flag = true,
                     'F' => ls.f_flag = true,
                     'l' => ls.l_flag = true,
-                    _ => {return  format!("ls: invalid option -- '{ch}'");}
+                    _ => {
+                        return format!("ls: invalid option -- '{ch}'");
+                    }
                 }
             }
         } else {
