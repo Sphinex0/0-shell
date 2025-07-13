@@ -42,6 +42,11 @@ pub fn mv(args: &[String])->i32 {
             last.to_path_buf()
         };
 
+        if fs::canonicalize(src).ok() == fs::canonicalize(&dst_path).ok() {
+            print_error(&format!("mv: '{}' and '{}' are the same file", src.display(), dst_path.display()));
+            continue;
+        }
+
         if let Err(e) = fs::rename(src, &dst_path) {
             print_error(&format!("mv: rename failed '{}': {}", src.display(), e));
             match fs::copy(src, &dst_path) {
