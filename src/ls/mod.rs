@@ -365,6 +365,7 @@ pub fn ls(tab: &[String], current_dir: &PathBuf) -> i32 {
         }
     }
 
+
     if ls.files_names.is_empty() {
         ls.files_names.push(".".to_string());
     }
@@ -372,6 +373,8 @@ pub fn ls(tab: &[String], current_dir: &PathBuf) -> i32 {
     let mut output = String::new();
 
     let files = ls.files_names.clone();
+    let mut err_status = 0;
+
     for (i, file_name) in files.iter().enumerate() {
         let mut dir = target_dir_str.clone();
         dir.push(file_name);
@@ -387,6 +390,7 @@ pub fn ls(tab: &[String], current_dir: &PathBuf) -> i32 {
                 }
             }
             Err(err) => {
+                err_status = 1;
                 let error_message = match err.kind() {
                     ErrorKind::NotFound => format!(
                         "ls: cannot access '{}': No such file or directory",
@@ -397,6 +401,7 @@ pub fn ls(tab: &[String], current_dir: &PathBuf) -> i32 {
                         dir.to_string_lossy()
                     ),
                     ErrorKind::NotADirectory => {
+                        err_status = 0;
                         let temp_dir = dir.clone();
                         let file_name: &str = temp_dir
                             .file_name()
@@ -415,15 +420,17 @@ pub fn ls(tab: &[String], current_dir: &PathBuf) -> i32 {
                                 if i != files.len() - 1 {
                                     output.push('\n');
                                 }
+                                // dbg!( &output);
                             }
-                            Err(_) => {}
+                            Err(_) => {
+                                err_status = 1;
+                            }
                         }
                         format!("")
                     }
                     _ => format!("ls: cannot access '{}': {}", file_name, err),
                 };
-                print_error(&error_message);
-                return 1;
+                output.push_str(&error_message);
             }
         }
         if files.len() > 1 && i != files.len() - 1 {
@@ -431,5 +438,5 @@ pub fn ls(tab: &[String], current_dir: &PathBuf) -> i32 {
         }
     }
     println!("{output}");
-    0
+    err_status
 }
