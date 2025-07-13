@@ -6,7 +6,7 @@ use std::fs::Metadata;
 use std::fs::Permissions;
 use std::os::unix::fs::MetadataExt;
 use std::os::unix::fs::PermissionsExt;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::time::SystemTime;
 use users::*;
 
@@ -60,10 +60,7 @@ pub fn get_grp(metadata: &Metadata) -> Group {
     }
 }
 
-pub fn get_symlink_target_name<P: AsRef<Path>>(
-    symlink_path: P,
-) -> Result<(Result<Metadata, std::io::Error>, String), String> {
-    // Read the target path of the symlink
+pub fn get_symlink_target_name(symlink_path: &PathBuf) -> Result<(Result<Metadata, std::io::Error>, String), String> {
     let meta: Result<Metadata, std::io::Error> = fs::metadata(&symlink_path);
 
     let target_path = match fs::read_link(&symlink_path) {
@@ -71,31 +68,13 @@ pub fn get_symlink_target_name<P: AsRef<Path>>(
         Err(err) => {
             return Err(format!(
                 "Failed to read symlink '{}': {}",
-                symlink_path.as_ref().display(),
+                symlink_path.display(),
                 err
             ));
         }
     };
 
-    // Get the file name from the target path
-    let target_name = match target_path.file_name() {
-        Some(name) => name,
-        None => {
-            return Err(format!(
-                "Symlink '{}' points to an invalid path: {}",
-                symlink_path.as_ref().display(),
-                target_path.display()
-            ));
-        }
-    };
-
-    // Convert OsStr to String
-    let name = target_name
-        .to_str()
-        .map(String::from)
-        .unwrap_or("".to_string());
-
-    Ok((meta, name))
+    Ok((meta, target_path.to_string_lossy().to_string()))
 }
 
 pub fn get_time(metadata: &Metadata) -> String {
