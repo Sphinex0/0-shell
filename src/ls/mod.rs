@@ -111,11 +111,6 @@ impl Ls {
             });
             let mut file = Fileinfo::new(metadata.clone());
 
-            // Get user and group info
-            let user = helpers::get_usr(&metadata);
-            let grp = helpers::get_grp(&metadata);
-            file.user = user.name().to_str().unwrap_or("").to_string();
-            file.group = grp.name().to_str().unwrap_or("").to_string();
             let formatted_time = get_time(&file.metadata);
             let rdev = file.metadata.rdev();
             let major_num = major(rdev);
@@ -210,6 +205,11 @@ impl Ls {
         let mut matrix: Vec<Vec<String>> = vec![vec!["".to_string(); num_cols]; num_rows];
         let mut add_5 = 0;
         for (i, file) in self.files.iter_mut().enumerate() {
+            // Get user and group info
+            let user = helpers::get_usr(&file.metadata);
+            let grp = helpers::get_grp(&file.metadata);
+            file.user = user.name().to_str().unwrap_or("").to_string();
+            file.group = grp.name().to_str().unwrap_or("").to_string();
             if !self.a_flag && file.hidden {
                 continue;
             }
