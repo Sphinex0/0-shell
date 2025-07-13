@@ -4,7 +4,6 @@ use std::path::Path;
 use crate::print_error;
 
 pub fn mv(args: &[String])->i32 {
-    dbg!(&args);
     if args.is_empty() {
         print_error("mv: missing file operand");
         return 1;
@@ -42,6 +41,11 @@ pub fn mv(args: &[String])->i32 {
         } else {
             last.to_path_buf()
         };
+
+        if fs::canonicalize(src).ok() == fs::canonicalize(&dst_path).ok() {
+            print_error(&format!("mv: '{}' and '{}' are the same file", src.display(), dst_path.display()));
+            continue;
+        }
 
         if let Err(e) = fs::rename(src, &dst_path) {
             print_error(&format!("mv: rename failed '{}': {}", src.display(), e));
