@@ -390,7 +390,6 @@ impl Ls {
             }
             name + &total_lines + &res.join("")
         } else {
-            dbg!(&matrix);
             res.push(
                 matrix
                     .into_iter()
