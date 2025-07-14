@@ -6,10 +6,12 @@ use std::{
 use crate::print_error;
 
 pub fn cd(tab: &[String], history: &mut PathBuf, current_di: &mut PathBuf, home: &PathBuf) -> i32 {
+    // Default to home directory if no argument is provided
     let mut path = tab.get(0).unwrap_or(&home.display().to_string()).clone();
     let mut change = true;
     match path.as_str() {
         "-" => {
+            // Switch to previous directory stored in history
             if let Err(err) = set_current_dir(history.clone()) {
                 change = false;
                 print_error(&err.to_string());

@@ -2,9 +2,11 @@ use std::fs;
 use std::path::PathBuf;
 
 use crate::print_error;
-pub fn rm(args: &[String], current_dir: &PathBuf)->i32 {
+
+pub fn rm(args: &[String], current_dir: &PathBuf) -> i32 {
     let mut recursive = false;
     let mut paths = vec![];
+    // Parse arguments to separate flags and paths
     for arg in args {
         if arg == "-r" {
             recursive = true;
@@ -12,6 +14,7 @@ pub fn rm(args: &[String], current_dir: &PathBuf)->i32 {
             paths.push(arg);
         }
     }
+    // Check if any paths were provided
     if paths.is_empty() {
         print_error("rm: missing operand");
         return 1;

@@ -2,12 +2,14 @@ use crate::print_error;
 use std::fs;
 use std::path::Path;
 
-pub fn cp(args: &[String])-> i32 {
+pub fn cp(args: &[String]) -> i32 {
+    // Check if sufficient arguments are provided
     if args.len() < 2 {
         print_error("cp: wrong number of arguments");
         return 1;
     }
     let dst = Path::new(&args[args.len() - 1]);
+    // Validate that destination is a directory when copying multiple files
     if args.len() > 2 && !dst.is_dir() {
         print_error(&format!("cp: target '{}' is not a directory", dst.display()));
         return 1;

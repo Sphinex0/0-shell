@@ -53,7 +53,6 @@ pub trait CostumSplit {
 
 impl CostumSplit for String {
     fn custom_split(&self) -> (Command, bool) {
-        // println!("self => :{self:?}");
         let mut command = Command {
             name: String::new(),
             args: Vec::new(),

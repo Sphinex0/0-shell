@@ -3,7 +3,8 @@ use std::path::Path;
 
 use crate::print_error;
 
-pub fn mv(args: &[String])->i32 {
+pub fn mv(args: &[String]) -> i32 {
+    // Check for missing source or destination operands
     if args.is_empty() {
         print_error("mv: missing file operand");
         return 1;
@@ -14,6 +15,7 @@ pub fn mv(args: &[String])->i32 {
     }
     let last = Path::new(&args[args.len() - 1]);
     let sources = &args[..args.len() - 1];
+    // Validate that destination is a directory when moving multiple files
     if sources.len() > 1 && !last.is_dir() {
         print_error(&format!("mv: target '{}' is not a directory", last.display()));
         return 1;
@@ -68,27 +70,3 @@ pub fn mv(args: &[String])->i32 {
     }
     0
 }
-
-
-
-//     if args.len() != 2 {
-//         eprintln!("mv: wrong number of arguments");
-//     } else {
-//         let source = Path::new(args[0]);
-//         let destination = Path::new(args[1]);
-//         if let Err(e) = move_item(source, destination) {
-//             eprintln!("mv: {}: {}", source.display(), e);
-//         }
-//     }
-// }
-//     let destination = if destination.is_dir() {
-//         destination.join(
-//             source
-//                 .file_name()
-//                 .ok_or_else(|| "Invalid file name".to_string())?,
-//         )
-//     } else {
-//         destination.to_path_buf()
-//     };
-
-//     fs::rename(source, destination).map_err(|e| e.to_string())
