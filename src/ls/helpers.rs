@@ -53,17 +53,23 @@ pub fn format_permissions(permissions: &Permissions, path: &Path) -> String {
     }
 
     // Basic extended attribute check (fallback)
-     let attr_len = unsafe {libc::listxattr(path.to_str().unwrap_or("").as_ptr() as *const _, std::ptr::null_mut(), 0)};
-        if attr_len > 0 {
-            perm_str.push('+');
-        }
+    let attr_len = unsafe {
+        libc::listxattr(
+            path.to_str().unwrap_or("").as_ptr() as *const _,
+            std::ptr::null_mut(),
+            0,
+        )
+    };
+    if attr_len > 0 {
+        perm_str.push('+');
+    }
 
     perm_str
 }
 
 pub fn get_usr(metadata: &Metadata) -> User {
     let uid = metadata.uid();
-    let user =  match get_user_by_uid(uid) {
+    let user = match get_user_by_uid(uid) {
         Some(group) => group,
         None => get_user_by_uid(0).unwrap_or(User::new(uid, "root", metadata.gid())),
     };
@@ -79,7 +85,9 @@ pub fn get_grp(metadata: &Metadata) -> Group {
     }
 }
 
-pub fn get_symlink_target_name(symlink_path: &PathBuf) -> Result<(Result<Metadata, std::io::Error>, String), String> {
+pub fn get_symlink_target_name(
+    symlink_path: &PathBuf,
+) -> Result<(Result<Metadata, std::io::Error>, String), String> {
     let meta: Result<Metadata, std::io::Error> = fs::metadata(&symlink_path);
 
     let target_path = match fs::read_link(&symlink_path) {

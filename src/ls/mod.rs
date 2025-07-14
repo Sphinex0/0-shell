@@ -3,9 +3,11 @@ use libc::{major, minor};
 use std::fs;
 use std::fs::DirEntry;
 use std::fs::Metadata;
+use std::io;
 use std::io::ErrorKind;
 use std::os::unix::fs::FileTypeExt;
 use std::os::unix::fs::MetadataExt;
+use std::path::Path;
 use std::path::PathBuf;
 use term_size::dimensions;
 
@@ -46,7 +48,7 @@ struct Ls {
     f_flag: bool,
     l_flag: bool,
     files_names: Vec<String>,
-    is_file: bool,
+    is_current: bool,
 }
 
 impl Ls {
@@ -59,7 +61,7 @@ impl Ls {
             f_flag: false,
             l_flag: false,
             files_names: Vec::new(),
-            is_file: false,
+            is_current: false,
         }
     }
 
@@ -91,12 +93,22 @@ impl Ls {
         }
     }
 
-    fn myls(&mut self, entries: Vec<DirEntry>, file_name: String) -> String {
+    fn myls(
+        &mut self,
+        entries: Vec<DirEntry>,
+        file_name: Option<String>,
+        is_total: bool,
+    ) -> String {
         let mut res = Vec::new();
 
-        if self.files.len() > 1 && !self.is_file {
-            res.push(format!("{}:\n", file_name));
+        // if self.files.len() > 1 {
+        //     res.push(format!("{}:\n", file_name.unwrap()));
+        // }
+
+        if !self.is_current && file_name.is_some() {
+            res.push(format!("{}:\n", file_name.unwrap()));
         }
+
         let mut max_user = 0;
         let mut max_group = 0;
         let mut max_size = 0;
@@ -107,7 +119,7 @@ impl Ls {
         let mut max_name_size = 0;
         let mut max_link = 0;
         self.files.clear();
-        if self.a_flag && !self.is_file {
+        if self.a_flag && self.is_current {
             self.files.push(self.get("."));
             self.files.push(self.get(".."));
         }
@@ -211,7 +223,7 @@ impl Ls {
         let le = self.files.len();
         let term_width = dimensions().map(|(w, _)| w).unwrap_or(80);
         let col_width = max_name_size + 2; // Add padding for spacing
-        let total_width = le * col_width - 2; // Total width without last padding
+        let total_width = (le * col_width).saturating_sub(2); // Total width without last padding
 
         // Determine number of rows and columns
         let (num_cols, num_rows) = if total_width <= term_width {
@@ -236,7 +248,7 @@ impl Ls {
             }
 
             if self.l_flag {
-                total_blocks += file.metadata.blocks();
+                total_blocks += file.metadata.blocks() / 2;
 
                 let permissions = file.metadata.permissions();
                 let file_type = file.metadata.file_type();
@@ -357,25 +369,29 @@ impl Ls {
         }
 
         let mut total_lines = String::new();
-        if self.l_flag && !self.is_file {
+        if self.l_flag && is_total {
             total_lines = format!("total {}\n", total_blocks);
         }
 
         if self.l_flag {
             total_lines + &res.join("")
         } else {
-            matrix
-                .into_iter()
-                .filter(|row| row.iter().any(|s| !s.is_empty()))
-                .map(|row| row.join(""))
-                .collect::<Vec<_>>()
-                .join("\n")
+            res.push(
+                matrix
+                    .into_iter()
+                    .filter(|row| row.iter().any(|s| !s.is_empty()))
+                    .map(|row| row.join(""))
+                    .collect::<Vec<_>>()
+                    .join("\n"),
+            );
+            res.join("")
         }
     }
 }
 
 pub fn ls(tab: &[String], current_dir: &PathBuf) -> i32 {
     let mut ls = Ls::new();
+    let mut no_dir = vec![];
 
     for arg in tab {
         if arg.starts_with('-') {
@@ -391,15 +407,33 @@ pub fn ls(tab: &[String], current_dir: &PathBuf) -> i32 {
                 }
             }
         } else {
-            ls.files_names.push(arg.to_string());
+            let mut path = current_dir.clone();
+            path.push(arg.to_string());
+            if path.is_file() {
+                match dir_entry_from_path(&path) {
+                    Ok(entry) => no_dir.push(entry),
+                    Err(_) => {}
+                }
+            } else {
+                ls.files_names.push(arg.to_string());
+            }
         }
     }
 
-    if ls.files_names.is_empty() {
+    if ls.files_names.is_empty() && no_dir.is_empty() {
         ls.files_names.push(".".to_string());
+        ls.is_current = true;
     }
 
     let mut output = String::new();
+
+    if !no_dir.is_empty() {
+        output.push_str(&ls.myls(no_dir, None, false));
+        if ls.files.len() > 0 {
+            output.push('\n');
+        }
+    }
+
     let files = ls.files_names.clone();
     let mut err_status = 0;
 
@@ -417,7 +451,7 @@ pub fn ls(tab: &[String], current_dir: &PathBuf) -> i32 {
         match fs::read_dir(&target_dir_str) {
             Ok(entries) => {
                 let filtered: Vec<_> = entries.filter_map(Result::ok).collect();
-                output.push_str(&ls.myls(filtered, file_name.to_string()));
+                output.push_str(&ls.myls(filtered, Some(file_name.to_string()), true));
                 if i != files.len() - 1 {
                     output.push_str("\n");
                 }
@@ -434,29 +468,33 @@ pub fn ls(tab: &[String], current_dir: &PathBuf) -> i32 {
                         target_dir_str.to_string_lossy()
                     ),
                     ErrorKind::NotADirectory => {
-                        err_status = 0;
-                        let temp_dir = target_dir_str.clone();
-                        let file_name: &str = temp_dir
-                            .file_name()
-                            .and_then(|os_str| os_str.to_str())
-                            .unwrap_or("unknown");
-                        target_dir_str.pop();
-                        match fs::read_dir(&target_dir_str) {
-                            Ok(entries) => {
-                                let filtered: Vec<_> = entries
-                                    .filter_map(Result::ok)
-                                    .filter(|entry| entry.file_name() == file_name)
-                                    .collect();
-                                ls.is_file = true;
-                                output.push_str(&ls.myls(filtered, file_name.to_string()));
-                                if i != files.len() - 1 {
-                                    output.push('\n');
-                                }
-                            }
-                            Err(_) => {
-                                err_status = 1;
-                            }
-                        }
+                        // dbg!("fghfghfgh");
+                        // err_status = 0;
+                        // let temp_dir = target_dir_str.clone();
+                        // let file_name: &str = temp_dir
+                        //     .file_name()
+                        //     .and_then(|os_str| os_str.to_str())
+                        //     .unwrap_or("unknown");
+                        // target_dir_str.pop();
+                        // match fs::read_dir(&target_dir_str) {
+                        //     Ok(entries) => {
+                        //         let filtered: Vec<_> = entries
+                        //             .filter_map(Result::ok)
+                        //             .filter(|entry| entry.file_name() == file_name)
+                        //             .collect();
+                        //         output.push_str(&ls.myls(
+                        //             filtered,
+                        //             Some(file_name.to_string()),
+                        //             true,
+                        //         ));
+                        //         if i != files.len() - 1 {
+                        //             output.push('\n');
+                        //         }
+                        //     }
+                        //     Err(_) => {
+                        //         err_status = 1;
+                        //     }
+                        // }
                         format!("")
                     }
                     _ => format!("ls: cannot access '{}': {}", file_name, err),
@@ -470,4 +508,27 @@ pub fn ls(tab: &[String], current_dir: &PathBuf) -> i32 {
     }
     println!("{output}");
     err_status
+}
+
+fn dir_entry_from_path(path: &Path) -> io::Result<DirEntry> {
+    // Get the file name from the path
+    let file_name = path
+        .file_name()
+        .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, "Path has no file name"))?
+        .to_string_lossy();
+
+    // Get the parent directory (defaults to current directory if none)
+    let parent = path
+        .parent()
+        .unwrap_or_else(|| Path::new("."))
+        .to_path_buf();
+
+    // Read the parent directory
+    let entries = fs::read_dir(&parent)?;
+
+    // Find the entry matching the file name
+    entries
+        .filter_map(Result::ok)
+        .find(|entry| entry.file_name().to_string_lossy() == file_name)
+        .ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, "File not found in directory"))
 }
