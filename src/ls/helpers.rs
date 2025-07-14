@@ -70,12 +70,11 @@ pub fn format_permissions(permissions: &Permissions, path: &Path) -> String {
 pub fn get_usr(metadata: &Metadata) -> User {
     let uid = metadata.uid();
     let user = match get_user_by_uid(uid) {
-        Some(group) => group,
-        None => get_user_by_uid(0).unwrap_or(User::new(uid, "root", metadata.gid())),
+        Some(user) => user,
+        None => User::new(uid, &uid.to_string(), metadata.gid()),
     };
     user
 }
-
 pub fn get_grp(metadata: &Metadata) -> Group {
     let gid = metadata.gid();
 
