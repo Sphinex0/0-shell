@@ -497,36 +497,6 @@ pub fn ls(tab: &[String], current_dir: &PathBuf) -> i32 {
                         "ls: cannot open directory '{}': Permission denied",
                         target_dir_str.to_string_lossy()
                     ),
-                    ErrorKind::NotADirectory => {
-                        // dbg!("fghfghfgh");
-                        // err_status = 0;
-                        // let temp_dir = target_dir_str.clone();
-                        // let file_name: &str = temp_dir
-                        //     .file_name()
-                        //     .and_then(|os_str| os_str.to_str())
-                        //     .unwrap_or("unknown");
-                        // target_dir_str.pop();
-                        // match fs::read_dir(&target_dir_str) {
-                        //     Ok(entries) => {
-                        //         let filtered: Vec<_> = entries
-                        //             .filter_map(Result::ok)
-                        //             .filter(|entry| entry.file_name() == file_name)
-                        //             .collect();
-                        //         output.push_str(&ls.myls(
-                        //             filtered,
-                        //             Some(file_name.to_string()),
-                        //             true,
-                        //         ));
-                        //         if i != files.len() - 1 {
-                        //             output.push('\n');
-                        //         }
-                        //     }
-                        //     Err(_) => {
-                        //         err_status = 1;
-                        //     }
-                        // }
-                        format!("")
-                    }
                     _ => format!("ls: cannot access '{}': {}", file_name, err),
                 };
                 output.push_str(&error_message);
