@@ -1,8 +1,10 @@
 use ctrlc;
 use shell::*;
 use std::env::*;
+use std::io;
 use std::io::Write;
 use std::io::stdin;
+use std::io::stdout;
 use std::path::PathBuf;
 use std::process::exit;
 
@@ -50,8 +52,8 @@ fn exec_command(
     }
 }
 
-fn main() {
-    println!(
+fn main() -> Result<(),io::Error> {
+    write!(stdout(),
         "\x1b[1;31m
      ██████╗     ███████╗██╗  ██╗███████╗██╗     ██╗     
     ██╔═████╗    ██╔════╝██║  ██║██╔════╝██║     ██║     
@@ -62,7 +64,7 @@ fn main() {
     ಠ_ಠ ѕρнιηєχ  | к!ℓℓṳ ✘_✘ | ṭѧ9ѧʏṭ ◔_◔ |  GᑌTᔕ (ಠ‿ಠ)
 
     \x1b[1;0m"
-    );
+    )?;
 
     // set_current_dir(path)
     let mut history_current_dir = current_dir().unwrap_or(PathBuf::from("/"));
@@ -81,7 +83,6 @@ fn main() {
         print_error("Error setting Ctrl+C handler");
     };
 
-
     loop {
         let address = match current_dir.strip_prefix(&home) {
             Ok(p) => "\x1b[1;31m~\x1b[1;36m/".to_string() + &p.display().to_string(),
@@ -89,7 +90,7 @@ fn main() {
         };
 
         print!("\x1b[1;33m➜  \x1b[1;36m{} \x1b[33m$ \x1b[0m", address);
-        std::io::stdout().flush().unwrap();
+        std::io::stdout().flush()?;
         let mut entry = String::new();
         let size = stdin().read_line(&mut entry).unwrap();
         if size == 0 {
@@ -102,11 +103,15 @@ fn main() {
             loop {
                 print!("\x1b[33m> \x1b[0m");
                 let mut input_tmp = String::new();
-                std::io::stdout().flush().unwrap();
+
+                std::io::stdout().flush()?;
+
                 let size = stdin().read_line(&mut input_tmp).unwrap();
+
                 if size == 0 {
                     break;
                 }
+
                 entry.push_str(&input_tmp);
                 let (input_tmp, open_quote2) = entry.custom_split();
                 open_quote = open_quote2;
@@ -126,7 +131,6 @@ fn main() {
             continue;
         }
 
-
         let output = exec_command(
             &command.name,
             &command.args,
@@ -136,6 +140,7 @@ fn main() {
             &home,
             last_command_staus,
         );
+        
         last_command_staus = output;
 
         // Add to history if entry has non-whitespace characters
