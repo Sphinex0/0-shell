@@ -206,6 +206,10 @@ impl Ls {
                     file.name.push('@');
                 } else if file_type.is_file() && file.is_exec {
                     file.name.push('*');
+                } else if file_type.is_fifo() {
+                    file.name.push('|'); 
+                } else if file_type.is_socket() {
+                    file.name.push('=');
                 }
             }
 
@@ -423,7 +427,7 @@ pub fn ls(tab: &[String], current_dir: &PathBuf) -> i32 {
         } else {
             let mut path = current_dir.clone();
             path.push(arg.to_string());
-            if path.is_file() {
+            if !path.is_dir() {
                 match dir_entry_from_path(&path) {
                     Ok(entry) => no_dir.push(entry),
                     Err(_) => {}
