@@ -49,6 +49,7 @@ struct Ls {
     l_flag: bool,
     files_names: Vec<String>,
     is_current: bool,
+    ticket: bool,
 }
 
 impl Ls {
@@ -62,6 +63,7 @@ impl Ls {
             l_flag: false,
             files_names: Vec::new(),
             is_current: false,
+            ticket: false,
         }
     }
 
@@ -104,9 +106,10 @@ impl Ls {
         // if self.files.len() > 1 {
         //     res.push(format!("{}:\n", file_name.unwrap()));
         // }
-
-        if !self.is_current && file_name.is_some() {
-            res.push(format!("{}:\n", file_name.unwrap()));
+        if !self.l_flag {
+            if !self.is_current && file_name.is_some() && self.ticket {
+                res.push(format!("{}:\n", file_name.clone().unwrap()));
+            }
         }
 
         let mut max_user = 0;
@@ -119,9 +122,13 @@ impl Ls {
         let mut max_name_size = 0;
         let mut max_link = 0;
         self.files.clear();
-        if self.a_flag && self.is_current {
+        if self.a_flag && is_total {
             self.files.push(self.get("."));
             self.files.push(self.get(".."));
+        }
+
+        for ele in &self.files {
+            max_link = max_link.max(ele.metadata.nlink().to_string().len());
         }
 
         for entry in entries {
@@ -160,7 +167,7 @@ impl Ls {
             max_size = max_size.max(size_field.len());
             max_time_size = max_time_size.max(formatted_time.len());
 
-            let unsafe_characters = "*?[]$!'\"\\;&|<> ()`~#=";
+            let unsafe_characters = "*?[]$!\"\\;&|<> ()`~#=";
 
             let name = entry.file_name().to_string_lossy().into_owned();
             file.name = name.clone();
@@ -168,6 +175,9 @@ impl Ls {
             for c in name.chars() {
                 if unsafe_characters.contains(c) {
                     file.name = "'".to_string() + &file.name + &"'".to_string();
+                    break;
+                } else if "'".contains(c) {
+                    file.name = "\"".to_string() + &file.name + &"\"".to_string();
                     break;
                 }
             }
@@ -374,7 +384,11 @@ impl Ls {
         }
 
         if self.l_flag {
-            total_lines + &res.join("")
+            let mut name = String::new();
+            if !self.is_current && file_name.is_some() && self.ticket {
+                name.push_str(&format!("{}:\n", file_name.unwrap()));
+            }
+            name + &total_lines + &res.join("")
         } else {
             res.push(
                 matrix
@@ -427,14 +441,30 @@ pub fn ls(tab: &[String], current_dir: &PathBuf) -> i32 {
 
     let mut output = String::new();
 
+    let le: usize = no_dir.len();
+
     if !no_dir.is_empty() {
         output.push_str(&ls.myls(no_dir, None, false));
-        if ls.files.len() > 0 {
-            output.push('\n');
+        if !ls.files_names.is_empty() {
+            output.push_str("\n\n");
         }
     }
 
-    let files = ls.files_names.clone();
+    let mut files = ls.files_names.clone();
+    files.sort_by(|a, b| {
+        let a_tmp = a
+            .chars()
+            .filter(|ch| ch.is_alphanumeric())
+            .collect::<String>();
+        let b_tmp = b
+            .chars()
+            .filter(|ch| ch.is_alphanumeric())
+            .collect::<String>();
+        a_tmp.to_ascii_lowercase().cmp(&b_tmp.to_ascii_lowercase())
+    });
+
+    ls.ticket = (files.len() + le) > 1;
+
     let mut err_status = 0;
 
     for (i, file_name) in files.iter().enumerate() {
