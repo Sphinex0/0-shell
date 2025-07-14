@@ -163,7 +163,7 @@ impl Ls {
             max_size = max_size.max(size_field.len());
             max_time_size = max_time_size.max(formatted_time.len());
 
-            let unsafe_characters = "*?[]$!'\"\\;&|<> ()`~#=";
+            let unsafe_characters = "*?[]$!\"\\;&|<> ()`~#=";
 
             let name = entry.file_name().to_string_lossy().into_owned();
             file.name = name.clone();
@@ -171,6 +171,9 @@ impl Ls {
             for c in name.chars() {
                 if unsafe_characters.contains(c) {
                     file.name = "'".to_string() + &file.name + &"'".to_string();
+                    break;
+                } else if "'".contains(c) {
+                    file.name = "\"".to_string() + &file.name + &"\"".to_string();
                     break;
                 }
             }
