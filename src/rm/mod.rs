@@ -19,19 +19,26 @@ pub fn rm(args: &[String], current_dir: &PathBuf) -> i32 {
         print_error("rm: missing operand");
         return 1;
     }
-    
+
     for arg in paths {
         let mut tmp = current_dir.clone();
-        if arg == "." || arg == ".."{
-            print_error("rm: refusing to remove '.' or '..' directory: skipping '..'");
-            continue
-        }
+
+        let mut valid = false;
         for part in arg.split('/') {
             match part {
                 "." => {}
-                ".." => { tmp.pop(); }
-                _ => { tmp.push(part); }
+                ".." => {
+                    tmp.pop();
+                }
+                _ => {
+                    tmp.push(part);
+                    valid = true;
+                }
             }
+        }
+        if !valid {
+            print_error(&format!("rm: refusing to remove '.' or '..' directory: skipping '{arg}'"));
+            continue;
         }
         if tmp.is_dir() {
             if recursive {
