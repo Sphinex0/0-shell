@@ -91,7 +91,12 @@ impl Ls {
         }
     }
 
-    fn myls(&mut self, entries: Vec<DirEntry>) -> String {
+    fn myls(&mut self, entries: Vec<DirEntry>, file_name: String) -> String {
+        let mut res = Vec::new();
+
+        if self.files.len() > 1 && !self.is_file {
+            res.push(format!("{}:\n", file_name));
+        }
         let mut max_user = 0;
         let mut max_group = 0;
         let mut max_size = 0;
@@ -189,7 +194,7 @@ impl Ls {
             self.files.push(file);
         }
 
-            self.files.sort_by(|a, b| {
+        self.files.sort_by(|a, b| {
             let a_tmp = a
                 .name
                 .chars()
@@ -200,14 +205,9 @@ impl Ls {
                 .chars()
                 .filter(|ch| ch.is_alphanumeric())
                 .collect::<String>();
-            a_tmp
-                .to_ascii_lowercase()
-                .as_bytes()
-                .cmp(&b_tmp.to_ascii_lowercase().as_bytes())
-            });
+            a_tmp.to_ascii_lowercase().cmp(&b_tmp.to_ascii_lowercase())
+        });
 
-
-        let mut res = Vec::new();
         let le = self.files.len();
         let term_width = dimensions().map(|(w, _)| w).unwrap_or(80);
         let col_width = max_name_size + 2; // Add padding for spacing
@@ -414,13 +414,10 @@ pub fn ls(tab: &[String], current_dir: &PathBuf) -> i32 {
         ls.cur_dir = target_dir_str.clone();
         ls.prev_dir = prev_dir;
 
-        if files.len() > 1 {
-            output.push_str(&format!("{}:\n", file_name));
-        }
         match fs::read_dir(&target_dir_str) {
             Ok(entries) => {
                 let filtered: Vec<_> = entries.filter_map(Result::ok).collect();
-                output.push_str(&ls.myls(filtered));
+                output.push_str(&ls.myls(filtered, file_name.to_string()));
                 if i != files.len() - 1 {
                     output.push_str("\n");
                 }
@@ -451,7 +448,7 @@ pub fn ls(tab: &[String], current_dir: &PathBuf) -> i32 {
                                     .filter(|entry| entry.file_name() == file_name)
                                     .collect();
                                 ls.is_file = true;
-                                output.push_str(&ls.myls(filtered));
+                                output.push_str(&ls.myls(filtered, file_name.to_string()));
                                 if i != files.len() - 1 {
                                     output.push('\n');
                                 }
