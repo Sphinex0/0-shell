@@ -189,11 +189,23 @@ impl Ls {
             self.files.push(file);
         }
 
-        self.files.sort_by(|a, b| {
-            a.name
+            self.files.sort_by(|a, b| {
+            let a_tmp = a
+                .name
+                .chars()
+                .filter(|ch| ch.is_alphanumeric())
+                .collect::<String>();
+            let b_tmp = b
+                .name
+                .chars()
+                .filter(|ch| ch.is_alphanumeric())
+                .collect::<String>();
+            a_tmp
                 .to_ascii_lowercase()
-                .cmp(&b.name.to_ascii_lowercase())
-        });
+                .as_bytes()
+                .cmp(&b_tmp.to_ascii_lowercase().as_bytes())
+            });
+
 
         let mut res = Vec::new();
         let le = self.files.len();
@@ -313,7 +325,7 @@ impl Ls {
                     time = formatted_time,
                     name = file.name,
                     width_links = if perms.contains("+") {max_link-1} else {
-max_link
+                    max_link
                     },
                     width_user = max_user,
                     width_group = max_group,
