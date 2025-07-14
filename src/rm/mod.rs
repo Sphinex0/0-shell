@@ -33,6 +33,12 @@ pub fn rm(args: &[String], current_dir: &PathBuf) -> i32 {
                 _ => { tmp.push(part); }
             }
         }
+        if let Some(name) = tmp.file_name() {
+            if name == "." || name == ".." {
+                print_error(&format!("rm: refusing to remove '.' or '..' directory: skipping '{arg}'"));
+                continue;
+            }
+        }
         if tmp.is_dir() {
             if recursive {
                 if let Err(err) = fs::remove_dir_all(&tmp) {
