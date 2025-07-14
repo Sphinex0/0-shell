@@ -106,9 +106,10 @@ impl Ls {
         // if self.files.len() > 1 {
         //     res.push(format!("{}:\n", file_name.unwrap()));
         // }
-
-        if !self.is_current && file_name.is_some() && self.ticket {
-            res.push(format!("{}:\n", file_name.unwrap()));
+        if !self.l_flag {
+            if !self.is_current && file_name.is_some() && self.ticket {
+                res.push(format!("{}:\n", file_name.clone().unwrap()));
+            }
         }
 
         let mut max_user = 0;
@@ -376,7 +377,11 @@ impl Ls {
         }
 
         if self.l_flag {
-            total_lines + &res.join("")
+            let mut name = String::new();
+            if !self.is_current && file_name.is_some() && self.ticket {
+                name.push_str(&format!("{}:\n", file_name.unwrap()));
+            }
+            name + &total_lines + &res.join("")
         } else {
             res.push(
                 matrix
