@@ -81,7 +81,7 @@ pub fn get_grp(metadata: &Metadata) -> Group {
 
     match get_group_by_gid(gid) {
         Some(group) => group,
-        None => get_group_by_gid(0).unwrap_or(Group::new(gid, "root")),
+        None => Group::new(gid, &gid.to_string()), 
     }
 }
 
