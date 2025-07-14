@@ -49,6 +49,7 @@ struct Ls {
     l_flag: bool,
     files_names: Vec<String>,
     is_current: bool,
+    ticket: bool,
 }
 
 impl Ls {
@@ -62,6 +63,7 @@ impl Ls {
             l_flag: false,
             files_names: Vec::new(),
             is_current: false,
+            ticket: false,
         }
     }
 
@@ -105,7 +107,7 @@ impl Ls {
         //     res.push(format!("{}:\n", file_name.unwrap()));
         // }
 
-        if !self.is_current && file_name.is_some() {
+        if !self.is_current && file_name.is_some() && self.ticket {
             res.push(format!("{}:\n", file_name.unwrap()));
         }
 
@@ -427,14 +429,30 @@ pub fn ls(tab: &[String], current_dir: &PathBuf) -> i32 {
 
     let mut output = String::new();
 
+    let le: usize = no_dir.len();
+
     if !no_dir.is_empty() {
         output.push_str(&ls.myls(no_dir, None, false));
-        if ls.files.len() > 0 {
-            output.push('\n');
+        if !ls.files_names.is_empty() {
+            output.push_str("\n\n");
         }
     }
 
-    let files = ls.files_names.clone();
+    let mut files = ls.files_names.clone();
+    files.sort_by(|a, b| {
+        let a_tmp = a
+            .chars()
+            .filter(|ch| ch.is_alphanumeric())
+            .collect::<String>();
+        let b_tmp = b
+            .chars()
+            .filter(|ch| ch.is_alphanumeric())
+            .collect::<String>();
+        a_tmp.to_ascii_lowercase().cmp(&b_tmp.to_ascii_lowercase())
+    });
+
+    ls.ticket = (files.len() + le) > 1;
+
     let mut err_status = 0;
 
     for (i, file_name) in files.iter().enumerate() {
