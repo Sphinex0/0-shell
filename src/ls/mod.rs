@@ -127,6 +127,10 @@ impl Ls {
             self.files.push(self.get(".."));
         }
 
+        for ele in &self.files {
+            max_link = max_link.max(ele.metadata.nlink().to_string().len());
+        }
+
         for entry in entries {
             let metadata = entry.metadata().unwrap_or_else(|_| {
                 Metadata::from(fs::File::open("/dev/null").unwrap().metadata().unwrap())
