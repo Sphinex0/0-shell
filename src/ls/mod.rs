@@ -122,7 +122,7 @@ impl Ls {
         let mut max_name_size = 0;
         let mut max_link = 0;
         self.files.clear();
-        if self.a_flag && self.is_current {
+        if self.a_flag && is_total {
             self.files.push(self.get("."));
             self.files.push(self.get(".."));
         }
